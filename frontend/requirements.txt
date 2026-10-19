@@ -1,0 +1,15 @@
+# UI
+PyQt5==5.15.9
+
+# HTTP client for talking to the backend
+requests
+# or httpx, if you prefer; pick one
+
+# Message rendering
+markdown==3.10.2
+pygments==2.20.0
+
+# Optional
+pillow==12.2.0          # only if you show or resize images/avatars
+termcolor==3.3.0        # only for colored console logs
+python-dotenv           # only if the client reads a .env for the API URL

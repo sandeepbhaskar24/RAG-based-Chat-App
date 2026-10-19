@@ -1,0 +1,26 @@
+# API server
+fastapi==0.146.0
+uvicorn[standard]
+python-multipart        # required for file uploads
+pydantic-settings
+python-dotenv
+
+# Auth
+PyJWT==2.9.0
+Werkzeug==3.1.8         # password hashing
+
+# Database (MySQL)
+PyMySQL==1.2.3
+
+# RAG / LLM
+langchain==1.2.15
+langchain-core==1.2.28
+langchain-openai==1.1.12
+langchain-qdrant
+langchain-text-splitters
+qdrant-client
+tiktoken==0.12.0
+
+# Document loading
+pdfplumber==0.11.9
+python-docx==1.2.0
