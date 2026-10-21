@@ -1,7 +1,9 @@
 import logging
+from termcolor import colored
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.routing import iter_route_contexts
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, chat, documents, health
@@ -35,3 +37,6 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(chat.router)
+
+for route in iter_route_contexts(app.routes):
+    print(route.path, route.methods, route.name)
