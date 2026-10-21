@@ -348,15 +348,17 @@ def _sources_footer(sources) -> str:
 # ── Document upload / clear ────────────────────────────────────────────────────
 
 def open_document(self):
-    """
-    Pick a file and upload it to the knowledge base (the backend chunks, embeds
-    and stores it in Qdrant). When indexing finishes the file shows up as the
-    attachment chip and the NEXT question is restricted to that document.
+    """Chat-input '+' button: upload AND attach to the next question."""
+    _start_upload(self, attach=True)
 
-    Clicking the button while a file is attached just detaches the chip - the
-    document stays in the library and remains searchable.
-    """
-    if getattr(self, 'attached_document', None):
+
+def upload_to_library(self):
+    """Documents page '+ Add document': upload only, no chat attachment."""
+    _start_upload(self, attach=False)
+
+
+def _start_upload(self, attach: bool):
+    if attach and getattr(self, 'attached_document', None):
         clear_document(self)
         return
 
@@ -394,51 +396,50 @@ def open_document(self):
             f"The limit is {MAX_UPLOAD_MB} MB.")
         return
 
-    for te in (self.ui.text_prompt, self.ui.text_prompt_2):
-        te.show_loading(filename)
+    if attach:
+        for te in (self.ui.text_prompt, self.ui.text_prompt_2):
+            te.show_loading(filename)
     for btn in (self.ui.addButton, self.ui.addButton_2):
         btn.setEnabled(False)
+    self.docs_panel.set_busy(True)
 
     self._upload_thread = UploadWorker(path, _headers(self))
     self._upload_thread.progress.connect(
         lambda stage: print(colored(f"{filename}: {stage}...", "cyan")))
     self._upload_thread.completed.connect(
-        lambda result: _on_upload_completed(self, path, filename, result))
+        lambda result: _on_upload_completed(self, path, filename, result, attach))
     self._upload_thread.start()
 
 
-def _on_upload_completed(self, path, filename, result):
+def _on_upload_completed(self, path, filename, result, attach=True):
     for te in (self.ui.text_prompt, self.ui.text_prompt_2):
         te.hide_loading()
     for btn in (self.ui.addButton, self.ui.addButton_2):
         btn.setEnabled(True)
+    self.docs_panel.set_busy(False)
 
     code   = result.get("status_code")
     status = result.get("status")
 
     if code == 200 and status == "ready":
-        self.attached_document = {
-            "filename":    filename,
-            "path":        path,
-            "text":        "",
-            "truncated":   False,
-            "is_image":    False,
-            "pixmap":      None,
-            "doc_id":      result["id"],          # used to scope the next question
-            "chunk_count": result.get("chunk_count", 0),
-        }
         print(colored(
             f"Indexed {filename} ({result.get('chunk_count', 0)} chunks)", "cyan"))
-        for te in (self.ui.text_prompt, self.ui.text_prompt_2):
-            te.set_attachment(self.attached_document)
-        _set_attach_button_active(self, filename)
-        load_documents(self)
+        if attach:
+            self.attached_document = {
+                "filename": filename, "path": path, "text": "",
+                "truncated": False, "is_image": False, "pixmap": None,
+                "doc_id": result["id"],
+                "chunk_count": result.get("chunk_count", 0),
+            }
+            for te in (self.ui.text_prompt, self.ui.text_prompt_2):
+                te.set_attachment(self.attached_document)
+            _set_attach_button_active(self, filename)
+        load_documents(self)          # <- new doc appears in docs_list_frame
 
     elif code == 200 and status == "failed":
         QMessageBox.critical(
             self, "Indexing Failed",
             f"Could not index '{filename}':\n\n{result.get('error') or 'Unknown error'}")
-        # Don't leave a dead entry in the library
         self._cleanup_thread = WorkerThread(
             None, 'DELETE', f"documents/{result['id']}", headers=_headers(self))
         self._cleanup_thread.data_fetched.connect(lambda _r: load_documents(self))
@@ -455,7 +456,6 @@ def _on_upload_completed(self, path, filename, result):
         QMessageBox.critical(
             self, "Upload Failed",
             f"Could not upload '{filename}':\n\n{_error_text(result)}")
-
 
 def clear_document(self):
     if getattr(self, 'attached_document', None):
@@ -505,7 +505,13 @@ def _set_attach_button_inactive(self):
 # ── Document library (optional: needs a QListWidget named `documents_list`) ────
 
 def load_documents(self):
-    if not _read_token() or getattr(self.ui, 'documents_list', None) is None:
+    """Fetch the logged-in user's documents from the server into the panel."""
+    panel = getattr(self, 'docs_panel', None)
+    if panel is None or not _read_token():
+        return
+    t = getattr(self, 'docs_thread', None)
+    if t is not None and t.isRunning():          # don't replace a running QThread
+        QTimer.singleShot(300, lambda: load_documents(self))
         return
     self.docs_thread = WorkerThread(None, 'GET', 'documents', headers=_headers(self))
     self.docs_thread.data_fetched.connect(lambda r: _populate_documents(self, r))
@@ -513,60 +519,38 @@ def load_documents(self):
 
 
 def _populate_documents(self, response):
-    lw = getattr(self.ui, 'documents_list', None)
-    if lw is None or response.get('status_code') != 200:
+    panel = getattr(self, 'docs_panel', None)
+    if panel is None or response.get('status_code') != 200:
         return
-    icons = {"ready": "✅", "processing": "⏳", "failed": "❌"}
-    lw.clear()
-    for doc in response.get('data', []):
-        item = QtWidgets.QListWidgetItem(
-            f"{icons.get(doc['status'], '•')}  {doc['filename']}")
-        item.setData(Qt.UserRole, doc['id'])
-        tip = f"{doc['filename']}\n{doc['status']} · {doc['chunk_count']} chunks"
-        if doc.get('error'):
-            tip += f"\n{doc['error']}"
-        item.setToolTip(tip)
-        lw.addItem(item)
+    docs = response.get('data', [])
+    panel.set_documents(docs)
+    # keep refreshing while something is still being indexed
+    if any(d.get('status') == 'processing' for d in docs):
+        QTimer.singleShot(2000, lambda: load_documents(self))
 
 
-def _show_document_context_menu(self, position):
-    """Connect to documents_list.customContextMenuRequested (like the chat list)."""
-    from PyQt5.QtWidgets import QMenu, QAction
-    lw   = self.ui.documents_list
-    item = lw.itemAt(position)
-    if not item:
-        return
-    doc_id = item.data(Qt.UserRole)
-    menu = QMenu(lw)
-    menu.setStyleSheet("""
-        QMenu {
-            background-color: rgb(43,47,58); color:rgba(255,255,255,200);
-            border:1px solid rgba(255,255,255,30); border-radius:6px;
-            padding:4px; font-family:'Roboto'; font-size:10pt;
-        }
-        QMenu::item{padding:8px 20px;border-radius:4px;}
-        QMenu::item:selected{background-color:rgb(55,62,76);color:white;}
-    """)
-    delete_action = QAction("🗑  Delete", lw)
-    menu.addAction(delete_action)
-    if menu.exec_(lw.mapToGlobal(position)) == delete_action:
-        _delete_document_confirm(self, item, doc_id)
-
-
-def _delete_document_confirm(self, item, doc_id):
+def delete_document(self, doc_id):
+    """✕ on a row: confirm, DELETE on the server, then drop it from the list."""
     from ui_controllers.show_confirm_dialog import ConfirmDialog
-    if ConfirmDialog().exec_() != QDialog.Accepted:
+    t = getattr(self, 'delete_doc_thread', None)
+    if t is not None and t.isRunning():
         return
+
+    dialog = ConfirmDialog()
+    dialog.ui.msg.setText("Delete Document")
+    dialog.ui.info.setText("Remove this document from your library?")
+    if dialog.exec_() != QDialog.Accepted:
+        return
+
     self.delete_doc_thread = WorkerThread(
         None, 'DELETE', f'documents/{doc_id}', headers=_headers(self))
 
     def on_deleted(r):
         if r.get('status_code') == 204:
-            lw = self.ui.documents_list
-            lw.takeItem(lw.row(item))
             attached = getattr(self, 'attached_document', None)
             if attached and attached.get('doc_id') == doc_id:
                 clear_document(self)
+            load_documents(self)
         else:
             QMessageBox.warning(self, "Delete Failed", _error_text(r))
 
