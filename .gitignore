@@ -1,5 +1,7 @@
-__pycache__/*
+**/__pycache__/*
+backend/storage/uploads/*
 .venv/*
 *.db
 .env
 .vscode/*
+frontend/auth_token.x
