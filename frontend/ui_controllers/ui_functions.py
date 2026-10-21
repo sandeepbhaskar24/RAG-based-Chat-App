@@ -167,6 +167,8 @@ class UIFunctions:
     def setDocumentsPage(self):
         self.update_button_ui(self.window.ui.buttonDocs)
         self.window.ui.setting_pages.setCurrentWidget(self.window.ui.Documents_page)
+        from services.handle_requests import load_documents
+        load_documents(self.window)
         
 
     def close_win(self):
