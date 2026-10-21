@@ -14,7 +14,7 @@ def get_llm() -> ChatOpenAI:
     return ChatOpenAI(
         model=settings.LLM_MODEL,
         temperature=settings.LLM_TEMPERATURE,
-        api_key=settings.OPENAI_API_KEY or None,
+        api_key=settings.OPENROUTER_API_KEY or None,
         base_url=settings.OPENAI_BASE_URL,
         max_retries=2,
         streaming=True,
