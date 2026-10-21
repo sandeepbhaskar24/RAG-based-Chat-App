@@ -44,6 +44,10 @@ class LogOutService:
                                                     border: 2px solid rgba(1, 190, 118, 170);
 }""")
 
+        from services.handle_requests import clear_document
+        self.window.docs_panel.clear()
+        clear_document(self.window)
+
         print(colored(f"LOGGED OUT User: {username.split()[1]}", 'green'))
         
     def LogOut(self):
