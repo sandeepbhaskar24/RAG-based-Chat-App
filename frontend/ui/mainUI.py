@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainUIZsMAIJ.ui'
+## Form generated from reading UI file 'mainUIdGGrSn.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.12.0
 ##
@@ -991,15 +991,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_28 = QVBoxLayout(self.frame_73)
         self.verticalLayout_28.setObjectName(u"verticalLayout_28")
         self.verticalLayout_28.setContentsMargins(0, -1, 0, -1)
-        self.frame_86 = QFrame(self.frame_73)
-        self.frame_86.setObjectName(u"frame_86")
+        self.docs_list_frame = QFrame(self.frame_73)
+        self.docs_list_frame.setObjectName(u"docs_list_frame")
         font12 = QFont()
         font12.setBold(False)
-        self.frame_86.setFont(font12)
-        self.frame_86.setFrameShape(QFrame.Shape.StyledPanel)
-        self.frame_86.setFrameShadow(QFrame.Shadow.Raised)
+        self.docs_list_frame.setFont(font12)
+        self.docs_list_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        self.docs_list_frame.setFrameShadow(QFrame.Shadow.Raised)
 
-        self.verticalLayout_28.addWidget(self.frame_86)
+        self.verticalLayout_28.addWidget(self.docs_list_frame)
 
 
         self.verticalLayout_22.addWidget(self.frame_73)
