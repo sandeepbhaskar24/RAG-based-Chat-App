@@ -8,11 +8,12 @@
 # importing necessary packages and modules ------------------------------
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout
 import os, sys, threading
 from termcolor import colored
 
 from ui.mainUI import Ui_MainWindow
+from ui.widgets.chat_area import ChatArea
 
 from auth.logout import LogOutService
 
@@ -25,11 +26,13 @@ from services.handle_requests import (run_login,
                                       stop_prompt,
                                       load_chat_history,
                                       on_chat_history_item_clicked,
-                                      _show_chat_context_menu)
+                                      _show_chat_context_menu,
+                                      upload_to_library,
+                                      delete_document)
 
 from ui_controllers.ui_functions import UIFunctions
+from ui_controllers.documents_panel import DocumentsPanel
 
-from ui.widgets.chat_area import ChatArea
 # -------------------------------------------------------------------------
 
 # Enable high-DPI scaling
@@ -42,6 +45,14 @@ class MainWindow(QMainWindow) :
         QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # ── Documents library panel ────────────────────────────────────────────
+        self.docs_panel = DocumentsPanel()
+        _lay = QVBoxLayout(self.ui.docs_list_frame)
+        _lay.setContentsMargins(0, 0, 0, 0)
+        _lay.addWidget(self.docs_panel)
+        self.docs_panel.add_requested.connect(lambda: upload_to_library(self))
+        self.docs_panel.remove_requested.connect(lambda doc_id: delete_document(self, doc_id))
   
         # ── Hide the external StickyButton siblings ────────────────────────────
         # The new AutoGrowTextEdit has add_btn + search_btn built in at the
