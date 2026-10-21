@@ -1,11 +1,14 @@
 from functools import lru_cache
 from pathlib import Path
-
+import os
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[2]  # backend/
 ROOT_DIR = BASE_DIR.parent                      # repo root
 
+# Load variables from the .env file into the system environment
+load_dotenv()
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -28,7 +31,8 @@ class Settings(BaseSettings):
 
     # OpenAI / LLM
     OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str | None = None
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY")
+    OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
     LLM_MODEL: str = "gpt-4o-mini"
     LLM_TEMPERATURE: float = 0.2
     EMBEDDING_MODEL: str = "text-embedding-3-small"
