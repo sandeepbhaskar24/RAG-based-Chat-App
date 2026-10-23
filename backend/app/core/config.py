@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     # RAG tuning
     CHUNK_SIZE: int = 900
     CHUNK_OVERLAP: int = 120
+    SEGMENT_SIZE: int = 500  
     RETRIEVAL_K: int = 5
     HISTORY_TOKEN_BUDGET: int = 2000
 

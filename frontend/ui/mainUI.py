@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainUIdGGrSn.ui'
+## Form generated from reading UI file 'mainUInGoXrT.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.12.0
 ##
@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(1005, 643)
+        MainWindow.resize(990, 643)
         MainWindow.setStyleSheet(u"QMainWindow{\n"
 "	background-color: rgb(45, 45, 45);\n"
 "	border-radius:10px;\n"
@@ -482,7 +482,7 @@ class Ui_MainWindow(object):
         self.label.setObjectName(u"label")
         self.label.setStyleSheet(u"background:none;\n"
 "border:none;")
-        self.label.setPixmap(QPixmap(u"C:/Users/san76/.designer/backup/Reqs/protected.png"))
+        self.label.setPixmap(QPixmap(u"../../../../.designer/backup/C:/Users/san76/.designer/backup/Reqs/protected.png"))
         self.label.setAlignment(Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignHCenter)
 
         self.horizontalLayout_8.addWidget(self.label)
@@ -510,7 +510,7 @@ class Ui_MainWindow(object):
         self.labelProtection.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
         self.searchButton = StickyButton(self.frame_13)
         self.searchButton.setObjectName(u"searchButton")
-        self.searchButton.setGeometry(QRect(642, 141, 45, 45))
+        self.searchButton.setGeometry(QRect(550, 141, 45, 45))
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -599,8 +599,8 @@ class Ui_MainWindow(object):
         self.text_prompt.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.text_prompt.raise_()
         self.labelProtection.raise_()
-        self.searchButton.raise_()
         self.addButton.raise_()
+        self.searchButton.raise_()
 
         self.verticalLayout_6.addWidget(self.frame_13)
 
@@ -1217,7 +1217,7 @@ class Ui_MainWindow(object):
 "	background-color: rgb(55, 62, 76)\n"
 "}")
         icon15 = QIcon()
-        icon15.addFile(u"../Reqs/arrow-right.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon15.addFile(u"../../../../.designer/Reqs/arrow-right.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btn_change_pass.setIcon(icon15)
 
         self.verticalLayout_24.addWidget(self.btn_change_pass)
@@ -1243,7 +1243,7 @@ class Ui_MainWindow(object):
 "	background-color: rgb(55, 62, 76)\n"
 "}")
         icon16 = QIcon()
-        icon16.addFile(u"../Reqs/arrow-right-off.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon16.addFile(u"../../../../.designer/Reqs/arrow-right-off.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.btn_2FA.setIcon(icon16)
         self.btn_2FA.setIconSize(QSize(45, 30))
 
@@ -1399,7 +1399,7 @@ class Ui_MainWindow(object):
 "padding-left:50px;\n"
 "padding-right:30px;")
         icon17 = QIcon()
-        icon17.addFile(u"../Reqs/check.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon17.addFile(u"../../../../.designer/Reqs/check.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.pushButton.setIcon(icon17)
         self.pushButton.setIconSize(QSize(40, 40))
 
@@ -1646,7 +1646,9 @@ class Ui_MainWindow(object):
         self.app_icon.setSizePolicy(sizePolicy2)
         self.app_icon.setStyleSheet(u"border:none;\n"
 "background:none;")
-        self.app_icon.setIcon(icon2)
+        icon18 = QIcon()
+        icon18.addFile(u"../../../../.designer/Reqs/app_icon.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.app_icon.setIcon(icon18)
         self.app_icon.setIconSize(QSize(60, 60))
 
         self.horizontalLayout_30.addWidget(self.app_icon)
@@ -1733,9 +1735,9 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color:  rgb(55, 62, 76);\n"
 "}")
-        icon18 = QIcon()
-        icon18.addFile(u"../Reqs/link.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.link_website.setIcon(icon18)
+        icon19 = QIcon()
+        icon19.addFile(u"../../../../.designer/Reqs/link.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.link_website.setIcon(icon19)
         self.link_website.setIconSize(QSize(30, 30))
 
         self.verticalLayout_42.addWidget(self.link_website)
@@ -1760,7 +1762,7 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color:  rgb(55, 62, 76);\n"
 "}")
-        self.link_support.setIcon(icon18)
+        self.link_support.setIcon(icon19)
         self.link_support.setIconSize(QSize(30, 30))
 
         self.verticalLayout_42.addWidget(self.link_support)
@@ -1785,7 +1787,7 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color:  rgb(55, 62, 76);\n"
 "}")
-        self.link_privacy_policy.setIcon(icon18)
+        self.link_privacy_policy.setIcon(icon19)
         self.link_privacy_policy.setIconSize(QSize(30, 30))
 
         self.verticalLayout_42.addWidget(self.link_privacy_policy)
@@ -1810,7 +1812,7 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color:  rgb(55, 62, 76);\n"
 "}")
-        self.link_terms_services.setIcon(icon18)
+        self.link_terms_services.setIcon(icon19)
         self.link_terms_services.setIconSize(QSize(30, 30))
 
         self.verticalLayout_42.addWidget(self.link_terms_services)
@@ -1832,7 +1834,7 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color: rgb(55, 62, 76);\n"
 "}")
-        self.link_open_source.setIcon(icon18)
+        self.link_open_source.setIcon(icon19)
         self.link_open_source.setIconSize(QSize(30, 30))
 
         self.verticalLayout_42.addWidget(self.link_open_source)
@@ -1896,9 +1898,9 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color: rgb(55, 62, 76);\n"
 "}")
-        icon19 = QIcon()
-        icon19.addFile(u"../Reqs/LinkedIn.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btn_linkedIn.setIcon(icon19)
+        icon20 = QIcon()
+        icon20.addFile(u"../../../../.designer/Reqs/LinkedIn.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btn_linkedIn.setIcon(icon20)
         self.btn_linkedIn.setIconSize(QSize(30, 30))
 
         self.verticalLayout_43.addWidget(self.btn_linkedIn)
@@ -1923,9 +1925,9 @@ class Ui_MainWindow(object):
 "QPushButton:hover{\n"
 "	background-color: rgb(55, 62, 76)\n"
 "}")
-        icon20 = QIcon()
-        icon20.addFile(u"../Reqs/GitHub.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btn_gitHub.setIcon(icon20)
+        icon21 = QIcon()
+        icon21.addFile(u"../../../../.designer/Reqs/GitHub.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btn_gitHub.setIcon(icon21)
         self.btn_gitHub.setIconSize(QSize(30, 30))
 
         self.verticalLayout_43.addWidget(self.btn_gitHub)

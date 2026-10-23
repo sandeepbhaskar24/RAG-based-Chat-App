@@ -6,7 +6,7 @@ requests
 # or httpx, if you prefer; pick one
 
 # Message rendering
-markdown==3.10.2
+markdown==4.10.2
 pygments==2.20.0
 
 # Optional

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +27,7 @@ class User(Base):
 
 class Document(Base):
     __tablename__ = "documents"
+    __table_args__ = (UniqueConstraint("user_id", "content_hash", name="uq_user_hash"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
@@ -38,8 +39,17 @@ class Document(Base):
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    content_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
 
     user: Mapped[User] = relationship(back_populates="documents")
+
+class ChunkRef(Base):
+    """Which documents use which Qdrant point. A point is deleted only when no refs remain."""
+    __tablename__ = "chunk_refs"
+
+    point_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    doc_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
 
 
 class ChatSession(Base):

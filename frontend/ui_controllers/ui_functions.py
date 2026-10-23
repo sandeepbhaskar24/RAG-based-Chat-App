@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QGraphicsDropShadowEffect
 from PyQt5.QtCore import QPropertyAnimation
 from termcolor import colored
+import os
 
 GLOBAL_STATE = 0
 SIDEBAR_EXPANDED = True   # track sidebar state
@@ -177,130 +178,132 @@ class UIFunctions:
         
     def load_icons(self):  
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./Reqs/app_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        print(os.getcwd())
+        print('Hellow')
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/app_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.app_icon.setIcon(icon)
         self.window.ui.app_icon.setIconSize(QtCore.QSize(60, 60))
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./Reqs/app_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/app_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.icon.setIcon(icon)
         self.window.ui.icon.setIconSize(QtCore.QSize(25, 25))
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./Reqs/menu-50 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/menu-50 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.toggle_button.setIcon(icon)
         self.window.ui.toggle_button.setIconSize(QtCore.QSize(25, 25))
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./Reqs/subtract-24 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/subtract-24 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.button_minimize.setIcon(icon)
         self.window.ui.button_minimize.setIconSize(QtCore.QSize(25, 25))
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./Reqs/maximize.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/maximize.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.button_restore.setIcon(icon)
         self.window.ui.button_restore.setIconSize(QtCore.QSize(20, 20))
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./Reqs/close-24 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/close-24 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.button_close.setIcon(icon)
         self.window.ui.button_close.setIconSize(QtCore.QSize(20, 20))
         
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap("./Reqs/new_chat.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon5.addPixmap(QtGui.QPixmap("frontend/Reqs/new_chat.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.button_new_chat.setIcon(icon5)
         self.window.ui.button_new_chat.setIconSize(QtCore.QSize(35, 35))
         
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap("./Reqs/settings-50 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon6.addPixmap(QtGui.QPixmap("frontend/Reqs/settings-50 copy.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.button_settings.setIcon(icon6)
         self.window.ui.button_settings.setIconSize(QtCore.QSize(35, 35))
         
         icon9 = QtGui.QIcon()
-        icon9.addPixmap(QtGui.QPixmap("./Reqs/user.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon9.addPixmap(QtGui.QPixmap("frontend/Reqs/user.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.login_button.setIcon(icon9)
         self.window.ui.login_button.setIconSize(QtCore.QSize(20, 20))
         
         icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap("./Reqs/add_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon8.addPixmap(QtGui.QPixmap("frontend/Reqs/add_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.addButton.setIcon(icon8)
         self.window.ui.addButton_2.setIcon(icon8)
         self.window.ui.addButton.setIconSize(QtCore.QSize(22, 22))
         
         icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap("./Reqs/search.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon7.addPixmap(QtGui.QPixmap("frontend/Reqs/search.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.searchButton.setIcon(icon7)
         self.window.ui.searchButton_2.setIcon(icon7)
         self.window.ui.searchButton.setIconSize(QtCore.QSize(27, 27))
         
         icon10 = QtGui.QIcon()
-        icon10.addPixmap(QtGui.QPixmap("./Reqs/user2.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon10.addPixmap(QtGui.QPixmap("frontend/Reqs/user2.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.acc_button.setIcon(icon10)
         self.window.ui.acc_button.setIconSize(QtCore.QSize(25, 25))
         
         icon11 = QtGui.QIcon()
-        icon11.addPixmap(QtGui.QPixmap("./Reqs/ui_.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon11.addPixmap(QtGui.QPixmap("frontend/Reqs/ui_.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.buttonDocs.setIcon(icon11)
         self.window.ui.buttonDocs.setIconSize(QtCore.QSize(25, 25))
         
         icon13 = QtGui.QIcon()
-        icon13.addPixmap(QtGui.QPixmap("./Reqs/update_.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon13.addPixmap(QtGui.QPixmap("frontend/Reqs/update_.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.buttonUpdate.setIcon(icon13)
         self.window.ui.buttonUpdate.setIconSize(QtCore.QSize(25, 25))
         
         icon15 = QtGui.QIcon()
-        icon15.addPixmap(QtGui.QPixmap("./Reqs/about_.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon15.addPixmap(QtGui.QPixmap("frontend/Reqs/about_.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.buttonAbout.setIcon(icon15)
         self.window.ui.buttonAbout.setIconSize(QtCore.QSize(25, 25))
         
         icon16 = QtGui.QIcon()
-        icon16.addPixmap(QtGui.QPixmap("./Reqs/arrow-right.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon16.addPixmap(QtGui.QPixmap("frontend/Reqs/arrow-right.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.btn_change_pass.setIcon(icon16)
         self.window.ui.buttonAbout.setIconSize(QtCore.QSize(25, 25))
         
         icon17 = QtGui.QIcon()
-        icon17.addPixmap(QtGui.QPixmap("./Reqs/arrow-right-off.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon17.addPixmap(QtGui.QPixmap("frontend/Reqs/arrow-right-off.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.btn_2FA.setIcon(icon17)
         self.window.ui.buttonAbout.setIconSize(QtCore.QSize(25, 25))
         
         
         icon26 = QtGui.QIcon()
-        icon26.addPixmap(QtGui.QPixmap("./Reqs/App_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon26.addPixmap(QtGui.QPixmap("frontend/Reqs/App_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.app_icon.setIcon(icon26)
         self.window.ui.app_icon.setIconSize(QtCore.QSize(120, 120))
         
         icon27 = QtGui.QIcon()
-        icon27.addPixmap(QtGui.QPixmap("./Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon27.addPixmap(QtGui.QPixmap("frontend/Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.link_website.setIcon(icon27)
         self.window.ui.link_website.setIconSize(QtCore.QSize(30, 30))
         
         icon28 = QtGui.QIcon()
-        icon28.addPixmap(QtGui.QPixmap("./Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon28.addPixmap(QtGui.QPixmap("frontend/Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.link_support.setIcon(icon28)
         self.window.ui.link_support.setIconSize(QtCore.QSize(30, 30))
         
         icon29 = QtGui.QIcon()
-        icon29.addPixmap(QtGui.QPixmap("./Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon29.addPixmap(QtGui.QPixmap("frontend/Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.link_privacy_policy.setIcon(icon29)
         self.window.ui.link_privacy_policy.setIconSize(QtCore.QSize(30, 30))
         
         icon30 = QtGui.QIcon()
-        icon30.addPixmap(QtGui.QPixmap("./Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon30.addPixmap(QtGui.QPixmap("frontend/Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.link_terms_services.setIcon(icon30)
         self.window.ui.link_terms_services.setIconSize(QtCore.QSize(30, 30))
         
         icon31 = QtGui.QIcon()
-        icon31.addPixmap(QtGui.QPixmap("./Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon31.addPixmap(QtGui.QPixmap("frontend/Reqs/link.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.link_open_source.setIcon(icon31)
         self.window.ui.link_open_source.setIconSize(QtCore.QSize(30, 30))
         
         icon32 = QtGui.QIcon()
-        icon32.addPixmap(QtGui.QPixmap("./Reqs/GitHub.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon32.addPixmap(QtGui.QPixmap("frontend/Reqs/GitHub.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.btn_gitHub.setIcon(icon32)
         self.window.ui.btn_gitHub.setIconSize(QtCore.QSize(30, 30))
         
         icon33 = QtGui.QIcon()
-        icon33.addPixmap(QtGui.QPixmap("./Reqs/LinkedIn.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon33.addPixmap(QtGui.QPixmap("frontend/Reqs/LinkedIn.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.window.ui.btn_linkedIn.setIcon(icon33)
         self.window.ui.btn_linkedIn.setIconSize(QtCore.QSize(30, 30))
         

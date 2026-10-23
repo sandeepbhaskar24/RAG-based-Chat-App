@@ -54,19 +54,22 @@ def ingest_document(doc_id: int) -> None:
     """Background task: index the document and record the outcome."""
     with SessionLocal() as db:
         doc = db.get(Document, doc_id)
-        if doc is None:  # deleted while queued
+        if doc is None:
             return
         try:
             doc.chunk_count = ingest_file(
-                doc.stored_path, doc_id=doc.id, user_id=doc.user_id, filename=doc.filename
+                doc.stored_path, doc_id=doc.id, user_id=doc.user_id,
+                filename=doc.filename, db=db,
             )
             doc.status, doc.error = "ready", None
         except Exception as exc:
             logger.exception("Ingestion failed for document %s", doc_id)
-            try:  # remove any partially written vectors
-                delete_document_vectors(doc.id, doc.user_id)
+            db.rollback()
+            try:   # releases this doc's claims; points other docs use are kept
+                delete_document_vectors(db, doc.id)
             except Exception:
                 logger.warning("Could not clean up vectors for document %s", doc_id)
+            doc = db.get(Document, doc_id)
             doc.status, doc.error = "failed", str(exc)[:500]
         db.commit()
 
@@ -76,9 +79,8 @@ def delete_document(db, user: User, doc_id: int) -> None:
     if doc is None:
         raise HTTPException(404, "Document not found")
     try:
-        delete_document_vectors(doc.id, user.id)
+        delete_document_vectors(db, doc.id)
     except Exception as exc:
-        # Keep the row so the user can retry; otherwise orphaned vectors would stay searchable.
         logger.exception("Vector deletion failed for document %s", doc_id)
         raise HTTPException(502, "Vector store unavailable - document was not deleted") from exc
     Path(doc.stored_path).unlink(missing_ok=True)

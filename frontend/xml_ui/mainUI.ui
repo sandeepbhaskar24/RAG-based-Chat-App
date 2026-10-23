@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
+    <width>990</width>
     <height>643</height>
    </rect>
   </property>
@@ -933,7 +933,7 @@ border:none;</string>
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap>C:/Users/san76/.designer/backup/Reqs/protected.png</pixmap>
+                             <pixmap>../../../../.designer/backup/C:/Users/san76/.designer/backup/Reqs/protected.png</pixmap>
                             </property>
                             <property name="alignment">
                              <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignHCenter</set>
@@ -1000,7 +1000,7 @@ p, li { white-space: pre-wrap; }
                          <widget class="StickyButton" name="searchButton">
                           <property name="geometry">
                            <rect>
-                            <x>642</x>
+                            <x>550</x>
                             <y>141</y>
                             <width>45</width>
                             <height>45</height>
@@ -1209,8 +1209,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
                          </widget>
                          <zorder>text_prompt</zorder>
                          <zorder>labelProtection</zorder>
-                         <zorder>searchButton</zorder>
                          <zorder>addButton</zorder>
+                         <zorder>searchButton</zorder>
                         </widget>
                        </item>
                        <item>
@@ -2528,7 +2528,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/arrow-right.png</normaloff>../Reqs/arrow-right.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/arrow-right.png</normaloff>../../../../.designer/Reqs/arrow-right.png</iconset>
                                          </property>
                                         </widget>
                                        </item>
@@ -2571,7 +2571,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/arrow-right-off.png</normaloff>../Reqs/arrow-right-off.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/arrow-right-off.png</normaloff>../../../../.designer/Reqs/arrow-right-off.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -2900,7 +2900,7 @@ padding-right:30px;</string>
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/check.png</normaloff>../Reqs/check.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/check.png</normaloff>../../../../.designer/Reqs/check.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3447,7 +3447,7 @@ background:none;</string>
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/app_icon.png</normaloff>../Reqs/app_icon.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/app_icon.png</normaloff>../../../../.designer/Reqs/app_icon.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3656,7 +3656,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/link.png</normaloff>../Reqs/link.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/link.png</normaloff>../../../../.designer/Reqs/link.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3704,7 +3704,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/link.png</normaloff>../Reqs/link.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/link.png</normaloff>../../../../.designer/Reqs/link.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3752,7 +3752,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/link.png</normaloff>../Reqs/link.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/link.png</normaloff>../../../../.designer/Reqs/link.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3800,7 +3800,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/link.png</normaloff>../Reqs/link.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/link.png</normaloff>../../../../.designer/Reqs/link.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3845,7 +3845,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/link.png</normaloff>../Reqs/link.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/link.png</normaloff>../../../../.designer/Reqs/link.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -3991,7 +3991,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/LinkedIn.png</normaloff>../Reqs/LinkedIn.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/LinkedIn.png</normaloff>../../../../.designer/Reqs/LinkedIn.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
@@ -4040,7 +4040,7 @@ QPushButton:hover{
                                          </property>
                                          <property name="icon">
                                           <iconset>
-                                           <normaloff>../Reqs/GitHub.png</normaloff>../Reqs/GitHub.png</iconset>
+                                           <normaloff>../../../../.designer/Reqs/GitHub.png</normaloff>../../../../.designer/Reqs/GitHub.png</iconset>
                                          </property>
                                          <property name="iconSize">
                                           <size>
