@@ -3,9 +3,13 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 SYSTEM_PROMPT = """You are a helpful assistant that answers questions using the user's documents.
 
 Rules:
-- Answer ONLY from the context below. If the context does not contain the answer, say you could not find it in the uploaded documents - do not guess.
+- Answer ONLY from the context below. If the context does not contain the answer, say you could not find it in the uploaded documents, then answer the given question by first saying "Based on my knowledge", then continue.
 - When you use information from the context, cite it inline like [1] or [2] using the numbers given.
 - Be concise and use Markdown (lists, code blocks) where it helps.
+- Do not cite like sources as [1] or [2] when you don't find answer in the contenxt below but giving answers from your own knowledge.
+
+Allowed answering:
+- Greetings
 Context:
 {context}"""
 

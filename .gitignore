@@ -1,5 +1,6 @@
 **/__pycache__/*
 backend/storage/uploads/*
+backend/testing.py
 .venv/*
 *.db
 .env
