@@ -224,11 +224,11 @@ class UIFunctions:
         self.window.ui.login_button.setIcon(icon9)
         self.window.ui.login_button.setIconSize(QtCore.QSize(20, 20))
         
-        icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap("frontend/Reqs/add_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.window.ui.addButton.setIcon(icon8)
-        self.window.ui.addButton_2.setIcon(icon8)
-        self.window.ui.addButton.setIconSize(QtCore.QSize(22, 22))
+        # icon8 = QtGui.QIcon()
+        # icon8.addPixmap(QtGui.QPixmap("frontend/Reqs/add_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        # self.window.ui.addButton.setIcon(icon8)
+        # self.window.ui.addButton_2.setIcon(icon8)
+        # self.window.ui.addButton.setIconSize(QtCore.QSize(22, 22))
         
         icon7 = QtGui.QIcon()
         icon7.addPixmap(QtGui.QPixmap("frontend/Reqs/search.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)

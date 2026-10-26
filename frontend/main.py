@@ -53,6 +53,10 @@ class MainWindow(QMainWindow) :
         _lay.addWidget(self.docs_panel)
         self.docs_panel.add_requested.connect(lambda: upload_to_library(self))
         self.docs_panel.remove_requested.connect(lambda doc_id: delete_document(self, doc_id))
+
+        self.ui_functions = UIFunctions(self)
+        self.ui_functions.uiDefinitions()
+        self.ui_functions.load_icons()
   
         # ── Hide the external StickyButton siblings ────────────────────────────
         # The new AutoGrowTextEdit has add_btn + search_btn built in at the
@@ -79,10 +83,6 @@ class MainWindow(QMainWindow) :
         # ── Chat area ──────────────────────────────────────────────────────────
         self.chat_area = ChatArea()
         self.ui.chat_layout.addWidget(self.chat_area)
- 
-        self.ui_functions = UIFunctions(self)
-        self.ui_functions.uiDefinitions()
-        self.ui_functions.load_icons()
  
         # No document attached at startup
         self.attached_document = None

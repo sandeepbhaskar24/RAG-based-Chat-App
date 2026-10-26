@@ -334,14 +334,33 @@ def _set_send_button_icon(self, streaming: bool):
         te.search_btn.setIconSize(size)
 
 
-def _sources_footer(sources) -> str:
-    """Markdown 'Sources' list shown under an answer (numbers match the [n] citations)."""
+def _sources_footer(sources, answer: str = "") -> str:
+    """Markdown 'Sources' list under an answer.
+
+    - Keeps only chunks the answer actually cited as [n] (when `answer` is given).
+    - Groups chunks from the same file/page into one line: **[1, 3]** README.md
+    """
     if not sources:
         return ""
-    lines = []
+
+    if answer:
+        cited = set()
+        for group in re.findall(r"\[(\d+(?:\s*,\s*\d+)*)\]", answer):
+            cited.update(int(n) for n in re.findall(r"\d+", group))
+        sources = [s for s in sources if s.get("ref") in cited]
+        if not sources:                       # answer came from the model's own knowledge
+            return ""
+
+    grouped = {}                              # (filename, page) -> [refs], insertion-ordered
     for s in sources:
-        page = f", p. {s['page']}" if s.get("page") else ""
-        lines.append(f"- **[{s.get('ref')}]** {s.get('filename', 'unknown')}{page}")
+        key = (s.get("filename", "unknown"), s.get("page"))
+        grouped.setdefault(key, []).append(s.get("ref"))
+
+    lines = []
+    for (filename, page), refs in grouped.items():
+        page_txt = f", p. {page}" if page else ""
+        ref_txt = ", ".join(str(r) for r in refs)
+        lines.append(f"- **[{ref_txt}]** {filename}{page_txt}")
     return "\n\n---\n\n**Sources**\n\n" + "\n".join(lines)
 
 
@@ -780,7 +799,7 @@ def finalize_stream(self):
     self._is_streaming = False
     if getattr(self, 'full_text', ''):
         self.ai_bubble.finish_stream(
-            self.full_text + _sources_footer(getattr(self, 'last_sources', [])))
+            self.full_text + _sources_footer(getattr(self, 'last_sources', []), self.full_text))
     self._scroll_pending = False
     self.chat_area.scroll_to_bottom()
     _set_send_button_icon(self, streaming=False)
@@ -935,7 +954,7 @@ def _render_loaded_chat(self, response, chat_id):
         is_user = msg['role'] == 'user'
         text    = msg['content']
         if not is_user:
-            text += _sources_footer(msg.get('sources') or [])
+            text += _sources_footer(msg.get('sources') or [], text)
         bubble = ChatBubble(text, is_user=is_user, available_width=chat_width)
         self.chat_area.add_bubble(bubble)
     self.current_chat_id = chat_id
