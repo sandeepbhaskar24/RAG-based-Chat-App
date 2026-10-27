@@ -42,7 +42,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QSize
 from PyQt5.QtGui import QFont, QPixmap, QPainter, QPainterPath, QMovie, QIcon
 
 import os
-
+from ui_controllers.paths import req
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -260,7 +260,7 @@ class AutoGrowTextEdit(QWidget):
     _V_PAD     = 8       # top and bottom padding inside the frame (each)
     _RADIUS    = 22
 
-    GIF_PATH = "Reqs/loading.gif"
+    GIF_PATH = req("loading.gif")          # inside the class
 
     # Stylesheet templates
     _SS_NORMAL = (
@@ -326,7 +326,7 @@ class AutoGrowTextEdit(QWidget):
         self.add_btn.setFixedSize(self._BTN_H, self._BTN_H)
         self.add_btn.setCursor(Qt.PointingHandCursor)
         self.add_btn.setToolTip("Attach a document")
-        _add_icon = QIcon("Reqs/add_icon.png")
+        _add_icon = QIcon(req("add_icon.png"))
         if not _add_icon.isNull():
             self.add_btn.setIcon(_add_icon)
             self.add_btn.setIconSize(QSize(22, 22))
@@ -348,7 +348,7 @@ class AutoGrowTextEdit(QWidget):
         self.search_btn = QPushButton()
         self.search_btn.setFixedSize(self._BTN_H, self._BTN_H)
         self.search_btn.setCursor(Qt.PointingHandCursor)
-        _search_icon = QIcon("Reqs/search.png")
+        _search_icon = QIcon(req("search.png"))
         if not _search_icon.isNull():
             self.search_btn.setIcon(_search_icon)
             self.search_btn.setIconSize(QSize(24, 24))
