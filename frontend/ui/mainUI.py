@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainUInGoXrT.ui'
+## Form generated from reading UI file 'mainUITEGcVp.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.12.0
 ##
@@ -510,7 +510,7 @@ class Ui_MainWindow(object):
         self.labelProtection.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
         self.searchButton = StickyButton(self.frame_13)
         self.searchButton.setObjectName(u"searchButton")
-        self.searchButton.setGeometry(QRect(550, 141, 45, 45))
+        self.searchButton.setGeometry(QRect(540, 141, 45, 45))
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

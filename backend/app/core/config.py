@@ -44,9 +44,9 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION: str = "documents"
 
     # RAG tuning
-    CHUNK_SIZE: int = 100
-    CHUNK_OVERLAP: int = 15
-    SEGMENT_SIZE: int = 100 
+    CHUNK_SIZE: int = 900
+    CHUNK_OVERLAP: int = 120
+    SEGMENT_SIZE: int = 500
     RETRIEVAL_K: int = 5
     HISTORY_TOKEN_BUDGET: int = 2000
 

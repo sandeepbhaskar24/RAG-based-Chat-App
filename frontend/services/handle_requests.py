@@ -334,24 +334,30 @@ def _set_send_button_icon(self, streaming: bool):
         te.search_btn.setIconSize(size)
 
 
-def _sources_footer(sources, answer: str = "") -> str:
-    """Markdown 'Sources' list under an answer.
+_NO_DOC_MARKERS = ("based on my knowledge", "could not find", "couldn't find",
+                   "not find it in the uploaded", "not found in the uploaded")
 
-    - Keeps only chunks the answer actually cited as [n] (when `answer` is given).
-    - Groups chunks from the same file/page into one line: **[1, 3]** README.md
-    """
+def _sources_footer(sources, answer: str = "") -> str:
+    """Markdown 'Sources' list under an answer, grouped by file/page."""
     if not sources:
         return ""
 
     if answer:
+        lowered = answer.lower()
         cited = set()
         for group in re.findall(r"\[(\d+(?:\s*,\s*\d+)*)\]", answer):
             cited.update(int(n) for n in re.findall(r"\d+", group))
-        sources = [s for s in sources if s.get("ref") in cited]
-        if not sources:                       # answer came from the model's own knowledge
+
+        if cited:                                    # model cited: show only those
+            sources = [s for s in sources if s.get("ref") in cited]
+        elif any(m in lowered for m in _NO_DOC_MARKERS):
+            return ""                                # answered from own knowledge
+        # else: no citations but answer looks document-based -> show all retrieved
+
+        if not sources:
             return ""
 
-    grouped = {}                              # (filename, page) -> [refs], insertion-ordered
+    grouped = {}                                    # (filename, page) -> [refs]
     for s in sources:
         key = (s.get("filename", "unknown"), s.get("page"))
         grouped.setdefault(key, []).append(s.get("ref"))
@@ -655,7 +661,7 @@ def after_verify_token(self, response):
         print(colored(f"Logged in user: {username}", 'green'))
         ss = "font-family:'Roboto'; font-size:10pt; color:green;"
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("Reqs/user.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("frontend/Reqs/user.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.ui.login_button.setIcon(icon)
         self.ui.login_button.setText('   ' + username)
         self.ui.login_button.setToolTip('')
@@ -767,6 +773,7 @@ def _on_stream_session(self, data):
 
 
 def _on_stream_sources(self, sources):
+    print("SOURCES:", sources)
     self.last_sources = sources
 
 
