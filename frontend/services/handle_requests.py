@@ -207,6 +207,7 @@ class ChatStreamWorker(QThread):
     stream_done      = pyqtSignal(dict)
     stream_error     = pyqtSignal(str)
     auth_failed      = pyqtSignal()
+    status_received = pyqtSignal(str)
 
     def __init__(self, payload, headers=None):
         super().__init__()
@@ -258,6 +259,9 @@ class ChatStreamWorker(QThread):
                 elif event == "error":
                     self.stream_error.emit(data.get("detail", "Unknown error"))
                     break
+                elif event == "status":
+                    self.status_received.emit(data.get("text", ""))
+
         except requests.exceptions.ConnectionError:
             if not self._stop:
                 self.stream_error.emit("Server not reachable. Is the backend running?")
@@ -338,26 +342,19 @@ _NO_DOC_MARKERS = ("based on my knowledge", "could not find", "couldn't find",
                    "not find it in the uploaded", "not found in the uploaded")
 
 def _sources_footer(sources, answer: str = "") -> str:
-    """Markdown 'Sources' list under an answer, grouped by file/page."""
-    if not sources:
+    """Markdown 'Sources' list, only for chunks the answer actually cited as [n]."""
+    if not sources or not answer:
         return ""
 
-    if answer:
-        lowered = answer.lower()
-        cited = set()
-        for group in re.findall(r"\[(\d+(?:\s*,\s*\d+)*)\]", answer):
-            cited.update(int(n) for n in re.findall(r"\d+", group))
+    cited = set()
+    for group in re.findall(r"\[(\d+(?:\s*,\s*\d+)*)\]", answer):
+        cited.update(int(n) for n in re.findall(r"\d+", group))
 
-        if cited:                                    # model cited: show only those
-            sources = [s for s in sources if s.get("ref") in cited]
-        elif any(m in lowered for m in _NO_DOC_MARKERS):
-            return ""                                # answered from own knowledge
-        # else: no citations but answer looks document-based -> show all retrieved
+    sources = [s for s in sources if s.get("ref") in cited]
+    if not sources:
+        return ""          # greeting, or answered from own knowledge -> no footer
 
-        if not sources:
-            return ""
-
-    grouped = {}                                    # (filename, page) -> [refs]
+    grouped = {}           # (filename, page) -> [refs]
     for s in sources:
         key = (s.get("filename", "unknown"), s.get("page"))
         grouped.setdefault(key, []).append(s.get("ref"))
@@ -837,6 +834,11 @@ def _on_stream_stopped(self):
     _set_send_button_icon(self, streaming=False)
     clear_document(self)
 
+def _on_stream_status(self, text):
+    if getattr(self, "full_text", ""):
+        return                       # answer already streaming
+    self.ai_bubble.append_stream(f"⏳ {text}")   # replaced by the first real token
+
 
 def send_prompt(self):
     from ui.widgets.chat_bubble import ChatBubble
@@ -912,6 +914,7 @@ def send_prompt(self):
     self.stream_thread.stream_error.connect(lambda m: _on_stream_error(self, m))
     self.stream_thread.auth_failed.connect(lambda: handle_token_expired(self))
     self.stream_thread.finished.connect(lambda: finalize_stream(self))
+    self.stream_thread.status_received.connect(lambda t: _on_stream_status(self, t))
     self.stream_thread.start()
 
 

@@ -1,33 +1,15 @@
 """Turn an uploaded file into LangChain Documents.
 
-PDF            -> one Document per page.
-TXT / MD / DOCX -> one Document per ~SEGMENT_SIZE-character "pseudo-page", so they
-                  behave exactly like PDF pages for chunking and de-duplication.
+PDF             -> one Document per page (splitter joins them and tracks page numbers).
+TXT / MD / DOCX -> a single Document, page=None.
 """
 from pathlib import Path
 
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from app.core.config import settings
 
 
 class UnsupportedFileType(ValueError):
     pass
-
-
-def _segments(text: str) -> list[Document]:
-    """Cut plain text into disjoint pseudo-pages (no overlap), preferring paragraph breaks."""
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=settings.SEGMENT_SIZE,
-        chunk_overlap=0,
-        separators=["\n\n", "\n", ". ", " ", ""],
-    )
-    parts = [p.strip() for p in splitter.split_text(text)]
-    parts = [p for p in parts if p]
-    # page=None: the position is not meaningful, so it must not influence the chunk ID
-    return [Document(page_content=p, metadata={"page": None, "segment": i})
-            for i, p in enumerate(parts)]
 
 
 def _load_pdf(path: Path) -> list[Document]:
@@ -52,13 +34,13 @@ def _load_docx(path: Path) -> list[Document]:
             cells = [c.text.strip() for c in row.cells if c.text.strip()]
             if cells:
                 parts.append(" | ".join(cells))
-    text = "\n\n".join(parts).strip()      # blank line = preferred segment boundary
-    return _segments(text) if text else []
+    text = "\n\n".join(parts).strip()
+    return [Document(page_content=text, metadata={"page": None})] if text else []
 
 
 def _load_text(path: Path) -> list[Document]:
     text = path.read_text(encoding="utf-8", errors="replace").strip()
-    return _segments(text) if text else []
+    return [Document(page_content=text, metadata={"page": None})] if text else []
 
 
 LOADERS = {

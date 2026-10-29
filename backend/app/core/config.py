@@ -44,11 +44,14 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION: str = "documents"
 
     # RAG tuning
-    CHUNK_SIZE: int = 900
+    CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 120
-    SEGMENT_SIZE: int = 500
-    RETRIEVAL_K: int = 5
+    RETRIEVAL_K: int = 10
     HISTORY_TOKEN_BUDGET: int = 2000
+
+    # Agents
+    AGENT_MAX_STEPS: int = 6
+    WEATHER_TIMEOUT: float = 10.0
 
     # Uploads
     UPLOAD_DIR: Path = BASE_DIR / "storage" / "uploads"
