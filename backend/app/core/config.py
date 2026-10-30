@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL_: str = "https://openrouter.ai/api/v1"
     OPENAI_BASE_URL:str = "https://integrate.api.nvidia.com/v1"
     # LLM_MODEL: str = "gpt-4o-mini"
-    LLM_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b"
+    LLM_MODEL: str = "openai/gpt-oss-20b"
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_TOKENS: int = 1800
     EMBEDDING_MODEL: str = "text-embedding-3-small"

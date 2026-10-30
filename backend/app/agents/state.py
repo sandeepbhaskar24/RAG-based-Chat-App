@@ -6,14 +6,8 @@ from langgraph.graph.message import add_messages
 
 class AgentState(TypedDict, total=False):
     question: str
-    history: list[BaseMessage]
-    has_docs: bool
+    history: list[BaseMessage]                     # prior chat turns (token-budgeted)
+    has_docs: bool                                 # does the user have any indexed document?
     route: Literal["direct", "retrieve", "weather"]
-
-    # KB planning fields
-    task_type: Literal["simple", "document_summary", "complex"]
-    retrieval_strategy: Literal["single_search", "multi_search", "full_document"]
-    needs_verification: bool
-
-    messages: Annotated[list[AnyMessage], add_messages]
-    steps: int
+    messages: Annotated[list[AnyMessage], add_messages]   # agent scratchpad (tool calls/results)
+    steps: int                                     # agent turns so far (loop guard)

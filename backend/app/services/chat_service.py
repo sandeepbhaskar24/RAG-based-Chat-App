@@ -92,31 +92,3 @@ def stream_chat(user_id: int, session_id: int, title: str, message: str,
     except Exception:
         logger.exception("Chat generation failed (session %s)", session_id)
         yield sse("error", {"detail": "Failed to generate a response. Please try again."})
-
-
-# def stream_chat(user_id: int, session_id: int, title: str, message: str,
-#                 doc_ids: list[int] | None, history: list[BaseMessage]) -> Iterator[str]:
-#     yield sse("session", {"session_id": session_id, "title": title})
-#     try:
-#         standalone = condense_question(message, history)
-#         # docs = retrieve(standalone, user_id, doc_ids)
-#         _SMALL_TALK = {"hi", "hello", "hey", "good morning", "good evening", "good afternoon", "thanks", "thank you"}
-#         if message.strip().lower().rstrip("!.?") in _SMALL_TALK:
-#             docs = []
-#         else:
-#             docs = retrieve(standalone, user_id, doc_ids)
-#         sources = extract_sources(docs)
-
-#         parts: list[str] = []
-#         for token in stream_rag_answer(message, history, docs):
-#             parts.append(token)
-#             yield sse("token", {"text": token})
-
-#         # Own DB session: the request-scoped one may already be closed while streaming.
-#         with SessionLocal() as db:
-#             saved = crud.add_message(db, session_id, "assistant", "".join(parts), sources)
-#         yield sse("sources", {"sources": sources})
-#         yield sse("done", {"message_id": saved.id})
-#     except Exception:
-#         logger.exception("Chat generation failed (session %s)", session_id)
-#         yield sse("error", {"detail": "Failed to generate a response. Please try again."})
