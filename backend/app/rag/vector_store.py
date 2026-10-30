@@ -137,7 +137,7 @@ def release_points(db, doc_id: int, point_ids: list[str]) -> None:
     sync_doc_ids(db, shared)   
 
 def delete_document_vectors(db, doc_id: int) -> None:
-    get_vector_store()                           # make sure the collection exists
+    ensure_collection(get_client())              # no embeddings client needed to delete
     mine = [r for (r,) in db.execute(select(ChunkRef.point_id).where(ChunkRef.doc_id == doc_id))]
     release_points(db, doc_id, mine)
 

@@ -9,8 +9,8 @@ from app.core.config import settings
 def get_embeddings() -> OpenAIEmbeddings:
     return OpenAIEmbeddings(
         model=settings.EMBEDDING_MODEL,
-        api_key=settings.OPENROUTER_API_KEY or None,
-        base_url=settings.OPENAI_BASE_URL,
+        api_key=settings.OPENAI_API_KEY or None,
+        base_url=settings.OPENAI_BASE_URL_,
         max_retries=3,
         check_embedding_ctx_length=False,   # needed for non-OpenAI endpoints
     )

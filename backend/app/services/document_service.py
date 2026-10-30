@@ -82,6 +82,9 @@ def delete_document(db, user: User, doc_id: int) -> None:
         delete_document_vectors(db, doc.id)
     except Exception as exc:
         logger.exception("Vector deletion failed for document %s", doc_id)
-        raise HTTPException(502, "Vector store unavailable - document was not deleted") from exc
+        db.rollback()
+        raise HTTPException(
+            502, f"Could not remove document data: {type(exc).__name__}: {str(exc)[:200]}"
+        ) from exc
     Path(doc.stored_path).unlink(missing_ok=True)
     crud.delete_document(db, doc)

@@ -6,3 +6,5 @@ backend/testing.py
 .env
 .vscode/*
 frontend/auth_token.x
+frontend_/
+backend/test_llm.py

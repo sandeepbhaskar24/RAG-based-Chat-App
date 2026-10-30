@@ -15,6 +15,21 @@ Answer concisely in Markdown. You are NOT looking at the user's documents for th
 claim to have read them or cite sources like [1]. If the user is really asking about their documents,
 invite them to ask the question directly so you can search them."""
 
+# Fast path: exactly one search is performed by the graph. Do not request tools or verification.
+KB_SIMPLE_ANSWER_PROMPT = """You are answering a question using retrieved excerpts from the user's documents.
+
+Context (numbered excerpts):
+{context}
+
+Rules:
+- Use ONLY the supplied context. Cite factual claims inline using the provided references, e.g. [1].
+- Do not invent details or fill gaps with outside knowledge.
+- If the excerpts are insufficient, clearly say what they support and what could not be found.
+- For document-summary requests, describe only the retrieved material; do not claim this is a complete
+  summary of the entire document unless the supplied context establishes full-document coverage.
+- Be clear and useful. Use Markdown."""
+
+# Advanced path: the agent may perform multiple searches and a separate evidence check.
 KB_AGENT_PROMPT = """You are a research agent that answers questions from the user's uploaded documents
 (a vector knowledge base). Work in a loop with these tools:
 
@@ -24,14 +39,11 @@ KB_AGENT_PROMPT = """You are a research agent that answers questions from the us
 
 Process:
 1. Use the chat history to turn follow-ups into standalone queries.
-2. Split multi-part or comparison questions into one focused search per part
-   (e.g. one query per employee type) and issue them together.
+2. Split multi-part or comparison questions into one focused search per part and issue them together.
 3. If results are empty or off-topic, call rewrite_query, then search again. Never repeat a query already tried.
-4. When you have enough evidence, write a concise draft answer citing excerpts as [n] and call check_sources with it.
-5. If the verdict is NOT SUPPORTED: search for what is missing (rewrite_query if needed) and check again,
-   or remove the unsupported claims. Do at most a couple of such rounds.
-6. When the verdict is SUPPORTED (or nothing more can be found), reply with just "Done".
-   A separate step writes the final answer for the user.
+4. When you have enough evidence, write a concise draft answer citing excerpts as [n] and call check_sources.
+5. If NOT SUPPORTED, search for what is missing or remove unsupported claims. Do at most two verification rounds.
+6. When SUPPORTED (or nothing more can be found), reply with just "Done"; a separate node writes the final answer.
 Never use outside knowledge."""
 
 KB_NUDGE = ("You have not verified your answer yet. If you haven't searched, call search_knowledge_base; "
@@ -42,12 +54,11 @@ KB_ANSWER_PROMPT = """You are answering a question using the user's documents.
 Context (numbered excerpts):
 {context}
 
-Verification of the evidence: {verification}
+Verification status: {verification}
 
 Rules:
 - Use ONLY the context. Cite each supported claim inline like [1] or [2].
-- For comparisons, organise the answer by the items being compared (a Markdown table works well)
-  and say where the documents are silent.
+- For comparisons, organise the answer by the items being compared and say where the documents are silent.
 - If verification lists missing or unsupported information, say plainly what could not be found.
 - If the context has nothing relevant, reply exactly: "I could not find it in the uploaded documents."
   and do not cite anything.
@@ -68,3 +79,20 @@ ask which city they mean instead of calling the tool.
 Use metric units unless the user asks for Fahrenheit/imperial.
 Reply in a short, friendly Markdown summary: place (with region/country), conditions, temperature
 (and feels-like), humidity, wind, rain chance, and a one-line outlook; mention the local observation time."""
+
+
+# Phase 3: full-document Map-Reduce summarization.
+SUMMARY_MAP_PROMPT = """You are summarizing one section of a user's document.
+Use ONLY the supplied section excerpts. Produce a compact, information-dense intermediate summary.
+Preserve important definitions, arguments, steps, examples, names, dates, numbers and qualifications.
+Attach the exact source citations [n] to the claims they support. Never invent or renumber citations.
+Do not write an introduction or conclusion for the entire document; this is only one section summary.
+If the section contains headings, preserve their names where useful."""
+
+SUMMARY_REDUCE_PROMPT = """You are synthesizing intermediate summaries of a user's document.
+Use ONLY the supplied intermediate summaries. Produce a coherent, well-organized summary that
+preserves the document's actual structure, main ideas, important details and qualifications.
+Preserve the exact citation references [n] supplied with the summaries. Do not invent facts,
+citations, headings, or a document structure that is not represented in the summaries.
+If the summaries do not cover a detail, say nothing about it rather than filling it from outside knowledge.
+When this is the final synthesis, answer the user's requested summary format and level of detail."""

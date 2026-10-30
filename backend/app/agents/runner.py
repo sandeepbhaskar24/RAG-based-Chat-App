@@ -1,10 +1,5 @@
-"""Runs the agent graph and converts LangGraph streams into simple events for chat_service.
-
-Yields dicts:
-  {"type": "status", "text": "..."}      progress hint ("Searching your documents...")
-  {"type": "token",  "text": "..."}      piece of the final answer
-  {"type": "final",  "route": "...", "sources": [...]}
-"""
+"""Runs the agent graph and converts LangGraph streams into simple events for chat_service."""
+import logging
 from collections.abc import Iterator
 
 from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage, HumanMessage
@@ -13,36 +8,80 @@ from app.agents.evidence import Evidence
 from app.agents.graph import get_graph
 from app.rag.chain import extract_sources
 
-# Only these nodes write text the user should see; everything else (router, tool-calling
-# turns of the KB agent, judges) stays internal.
+logger = logging.getLogger(__name__)
 STREAM_NODES = {"direct_answer", "kb_answer", "weather_agent"}
 
 
 def _text(msg) -> str:
-    c = msg.content
-    if isinstance(c, str):
-        return c
-    return "".join(p.get("text", "") for p in c if isinstance(p, dict) and p.get("type") == "text")
+    content = msg.content
+    if isinstance(content, str):
+        return content
+    return "".join(
+        part.get("text", "")
+        for part in content
+        if isinstance(part, dict) and part.get("type") == "text"
+    )
 
 
 def _tool_status(call: dict) -> str:
     name, args = call["name"], call.get("args", {})
     if name == "search_knowledge_base":
-        return f"Searching documents for \u201c{str(args.get('query', ''))[:60]}\u201d\u2026"
+        return f"Searching documents for “{str(args.get('query', ''))[:60]}”…"
     if name == "rewrite_query":
-        return "Refining the search query\u2026"
+        return "Refining the search query…"
     if name == "check_sources":
-        return "Verifying the answer against the sources\u2026"
+        return "Verifying the answer against the sources…"
     if name == "get_weather":
-        return f"Fetching live weather for {args.get('location', 'your location')}\u2026"
-    return "Working\u2026"
+        return f"Fetching live weather for {args.get('location', 'your location')}…"
+    return "Working…"
 
 
-def run_agents(question: str, history: list[BaseMessage], user_id: int,
-               doc_ids: list[int] | None, has_docs: bool) -> Iterator[dict]:
-    evidence = Evidence(user_id=user_id, doc_ids=doc_ids, question=question)
-    state = {"question": question, "history": history, "has_docs": has_docs,
-             "messages": [HumanMessage(question)], "steps": 0}
+def _normalize_doc_ids(doc_ids) -> list[int]:
+    """Normalize attachment IDs once, before creating Evidence and graph state."""
+    if not doc_ids:
+        return []
+    normalized = []
+    for value in doc_ids:
+        try:
+            doc_id = int(value)
+        except (TypeError, ValueError):
+            logger.warning("Ignoring invalid document ID passed to run_agents: %r", value)
+            continue
+        if doc_id > 0 and doc_id not in normalized:
+            normalized.append(doc_id)
+    return normalized
+
+
+def run_agents(
+    question: str,
+    history: list[BaseMessage],
+    user_id: int,
+    doc_ids: list[int] | None,
+    has_docs: bool,
+) -> Iterator[dict]:
+    """`doc_ids` are IDs attached to THIS request; `has_docs` means the user has indexed docs."""
+    normalized_doc_ids = _normalize_doc_ids(doc_ids)
+    effective_has_docs = bool(has_docs or normalized_doc_ids)
+
+    logger.info(
+        "run_agents input: user_id=%s, question=%r, attached_doc_ids=%s, "
+        "attached_doc_count=%d, has_docs_arg=%s, effective_has_docs=%s, history_len=%d",
+        user_id, question[:250], normalized_doc_ids, len(normalized_doc_ids),
+        has_docs, effective_has_docs, len(history or []),
+    )
+
+    evidence = Evidence(
+        user_id=user_id,
+        doc_ids=normalized_doc_ids or None,
+        question=question,
+    )
+    state = {
+        "question": question,
+        "history": history or [],
+        "has_docs": effective_has_docs,
+        "messages": [HumanMessage(question)],
+        "steps": 0,
+    }
     config = {"configurable": {"evidence": evidence}, "recursion_limit": 30}
 
     route, streamed, final_text = "direct", False, ""
@@ -56,26 +95,43 @@ def run_agents(question: str, history: list[BaseMessage], user_id: int,
                     yield {"type": "token", "text": text}
             continue
 
-        for node, update in payload.items():             # mode == "updates"
+        for node, update in payload.items():
             if not isinstance(update, dict):
                 continue
             if node == "router":
                 route = update.get("route", route)
-                label = {"retrieve": "Searching your documents\u2026",
-                         "weather": "Checking live weather\u2026"}.get(route)
+                label = {
+                    "retrieve": "Searching your documents…",
+                    "weather": "Checking live weather…",
+                }.get(route)
                 if label:
                     yield {"type": "status", "text": label}
+            elif node == "kb_plan" and update.get("task_type") == "document_summary":
+                yield {"type": "status", "text": "Preparing a full-document summary…"}
+            elif node == "kb_full_summary":
+                messages = update.get("messages") or []
+                if messages:
+                    last = messages[-1]
+                    if isinstance(last, AIMessage) and not last.tool_calls:
+                        final_text = _text(last)
             elif node in ("kb_agent", "weather_agent"):
-                last = update["messages"][-1]
-                for call in getattr(last, "tool_calls", None) or []:
-                    yield {"type": "status", "text": _tool_status(call)}
+                messages = update.get("messages") or []
+                if messages:
+                    last = messages[-1]
+                    for call in getattr(last, "tool_calls", None) or []:
+                        yield {"type": "status", "text": _tool_status(call)}
             if node in STREAM_NODES:
-                last = update["messages"][-1]
-                if isinstance(last, AIMessage) and not last.tool_calls:
-                    final_text = _text(last)
+                messages = update.get("messages") or []
+                if messages:
+                    last = messages[-1]
+                    if isinstance(last, AIMessage) and not last.tool_calls:
+                        final_text = _text(last)
 
-    if not streamed and final_text:                      # model that doesn't stream
+    if not streamed and final_text:
         yield {"type": "token", "text": final_text}
 
-    yield {"type": "final", "route": route,
-           "sources": extract_sources(evidence.docs) if route == "retrieve" else []}
+    yield {
+        "type": "final",
+        "route": route,
+        "sources": extract_sources(evidence.docs) if route == "retrieve" else [],
+    }

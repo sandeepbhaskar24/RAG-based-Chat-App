@@ -19,13 +19,21 @@ html, body, .stApp { font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sa
 .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"],
 [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background: var(--bg) !important; color: var(--text); }
 [data-testid="stHeader"] { background: transparent !important; }
-/* always-visible "open sidebar" button when the sidebar is collapsed */
-[data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] {
-    position: fixed; top: .6rem; left: .6rem; z-index: 1000002;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
-[data-testid="stExpandSidebarButton"] *, [data-testid="stSidebarCollapsedControl"] *,
-[data-testid="collapsedControl"] *, [data-testid="stSidebarCollapseButton"] *,
-[data-testid="stSidebarHeader"] button * { color: var(--text) !important; }
+
+/* Streamlit's own collapse/expand controls are hidden; we use our own toggle (.st-key-sb_toggle) */
+[data-testid="stSidebarCollapseButton"], [data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] { display: none !important; }
+
+/* sidebar never collapses by itself; open/closed is driven by build_css() below */
+section[data-testid="stSidebar"] {
+    transform: none !important; margin-left: 0 !important; visibility: visible !important;
+    width: 17rem !important; min-width: 17rem !important; max-width: 17rem !important; }
+@media (max-width: 768px) {
+    section[data-testid="stSidebar"] { width: 85vw !important; min-width: 0 !important; max-width: 85vw !important; } }
+
+.st-key-sb_toggle { position: fixed; top: .6rem; z-index: 1000002; width: auto !important; }
+.st-key-sb_toggle button { background: var(--surface); border: 1px solid var(--border);
+                          border-radius: 10px; color: var(--text); }
 [data-testid="stSidebar"], [data-testid="stSidebar"] > div { background: var(--sidebar) !important; border-right: 1px solid var(--border); }
 .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4,
 [data-testid="stMarkdownContainer"], [data-testid="stWidgetLabel"] p, .stTabs button { color: var(--text); }
@@ -102,13 +110,13 @@ table, th, td { border-color: var(--border) !important; color: var(--text); }
 .st-key-topbar [data-testid="stPopover"] button [data-testid="stIconMaterial"] { display: none; }
 
 /* ── Messages ─────────────────────────────────────────── */
-[data-testid="stChatMessage"] { background: transparent; padding: var(--gap) 0; }
-[data-testid^="stChatMessageAvatar"] { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+[data-testid="stChatMessage"] { background: transparent; padding: var(--gap) 0; gap: 0; }
+[data-testid^="stChatMessageAvatar"] { display: none !important; }
 /* user turn: right side, bubble. AI turn: left side, plain */
 [data-testid="stChatMessage"]:has([class*="st-key-umsg_"]) { flex-direction: row-reverse; }
 [data-testid="stChatMessage"]:has([class*="st-key-umsg_"]) [data-testid="stChatMessageContent"] {
-    flex: 0 1 auto; width: fit-content; max-width: 82%; background: var(--surface);
-    border-radius: 1.25rem; padding: .65rem 1.05rem; }
+    flex: 0 1 auto; width: fit-content; max-width: 82%; margin-left: auto; margin-right: -.6rem;
+    background: var(--surface); border-radius: 1.25rem; padding: .65rem 1.05rem; }
 
 /* action bar under AI answers */
 [class*="st-key-actions_"] button { border: none; min-height: 2rem; padding: 0 .45rem; color: var(--muted); }
@@ -139,10 +147,111 @@ table, th, td { border-color: var(--border) !important; color: var(--text); }
                        border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
 .st-key-cards button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
 .empty-state { text-align: center; color: var(--muted); padding: 1rem .5rem; font-size: .85rem; }
+
+/* ── ChatGPT-like sidebar refinements ─────────────────── */
+section[data-testid="stSidebar"] > div {
+    padding: .65rem .65rem .5rem !important;
+}
+[data-testid="stSidebarUserContent"] { padding-top: .25rem !important; }
+.brand {
+    font-size: 1rem;
+    padding: .35rem .45rem .9rem;
+    gap: .65rem;
+}
+.brand .logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+}
+.st-key-new_chat button {
+    width: 100%;
+    min-height: 2.65rem !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding: .45rem .7rem !important;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+    font-weight: 500;
+}
+.st-key-new_chat button:hover {
+    background: var(--hover) !important;
+}
+[data-testid="stSidebar"] [data-testid="stTextInput"] {
+    margin-top: .2rem;
+    margin-bottom: .35rem;
+}
+[data-testid="stSidebar"] [data-testid="stTextInput"] input {
+    min-height: 2.45rem;
+    border-radius: 10px !important;
+    font-size: .9rem;
+}
+.side-heading {
+    padding: .8rem .65rem .35rem;
+    font-size: .72rem;
+    letter-spacing: .02em;
+}
+.group-label {
+    padding: .7rem .65rem .25rem;
+    font-size: .75rem;
+    font-weight: 500;
+}
+.st-key-history [data-testid="stVerticalBlock"] { gap: .12rem !important; }
+[class*="st-key-row_"] [data-testid="stHorizontalBlock"] {
+    align-items: center;
+    gap: .15rem !important;
+}
+[class*="st-key-row_"] [data-testid="stColumn"]:first-child {
+    min-width: 0 !important;
+}
+[class*="st-key-row_"] [data-testid="stColumn"]:first-child button {
+    width: 100%;
+    min-height: 2.35rem !important;
+    padding: .4rem .65rem !important;
+    border-radius: 9px !important;
+    font-size: .88rem;
+    font-weight: 400;
+}
+[class*="st-key-row_"] [data-testid="stColumn"]:first-child button p {
+    text-align: left !important;
+    width: 100%;
+}
+[class*="st-key-row_"] button[kind="primary"] {
+    background: var(--hover) !important;
+    color: var(--text) !important;
+    font-weight: 500 !important;
+}
+[class*="st-key-row_"] [data-testid="stPopover"] > button {
+    min-height: 2rem;
+    border-radius: 8px !important;
+}
+.st-key-sb_bottom {
+    padding-top: .5rem;
+}
+.st-key-sb_bottom hr {
+    margin: .45rem 0 .7rem;
+}
+.profile {
+    min-height: 2.6rem;
+    padding: .35rem .45rem;
+    border-radius: 9px;
+    font-size: .9rem;
+}
+.profile:hover { background: var(--hover); }
+.avatar {
+    width: 29px;
+    height: 29px;
+}
+@media (max-width: 768px) {
+    section[data-testid="stSidebar"] {
+        width: 85vw !important;
+        min-width: 0 !important;
+        max-width: 85vw !important;
+    }
+}
 """
 
 
-def build_css(theme: str, font_size: str, compact: bool, show_avatars: bool) -> str:
+def build_css(theme: str, font_size: str, compact: bool, sidebar_open: bool = True) -> str:
     if theme == "Light":
         root = f":root{{{_vars(LIGHT)}}}"
     elif theme == "Dark":
@@ -151,6 +260,10 @@ def build_css(theme: str, font_size: str, compact: bool, show_avatars: bool) -> 
         root = f":root{{{_vars(LIGHT)}}} @media (prefers-color-scheme: dark){{:root{{{_vars(DARK)}}}}}"
     fs = {"Small": "0.9rem", "Default": "1rem", "Large": "1.1rem"}.get(font_size, "1rem")
     gap = ".15rem" if compact else ".7rem"
-    avatars = "" if show_avatars else '[data-testid^="stChatMessageAvatar"]{display:none!important}'
+    if sidebar_open:
+        side = (".st-key-sb_toggle{left:17.6rem}"
+                "@media (max-width:768px){.st-key-sb_toggle{left:calc(85vw + .4rem)}}")
+    else:
+        side = "section[data-testid='stSidebar']{display:none !important}.st-key-sb_toggle{left:.6rem}"
     return (f"<style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');"
-            f"{root}:root{{--fs:{fs};--gap:{gap}}}{BASE}{avatars}</style>")
+            f"{root}:root{{--fs:{fs};--gap:{gap}}}{BASE}{side}</style>")

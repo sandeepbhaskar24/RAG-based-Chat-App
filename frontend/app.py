@@ -10,7 +10,8 @@ from dialog.styles import build_css
 
 hr.init_state()
 ss = st.session_state
-st.markdown(build_css(ss.theme, ss.font_size, ss.compact, ss.show_avatars), unsafe_allow_html=True)
+st.markdown(build_css(ss.theme, ss.font_size, ss.compact, ss.get("sidebar_open", True)),
+            unsafe_allow_html=True)
 
 FILE_TYPES = [e.lstrip(".") for e in sorted(hr.ALLOWED_EXTS)]
 LANGUAGES = ["English", "Español", "Français", "Deutsch", "हिन्दी", "日本語"]
@@ -72,9 +73,8 @@ def settings_dialog():
         font = st.radio("Text size", ["Small", "Default", "Large"], horizontal=True,
                         index=["Small", "Default", "Large"].index(ss.font_size), key="font_ctl")
         compact = st.toggle("Compact message spacing", value=ss.compact, key="compact_ctl")
-        avatars = st.toggle("Show avatars", value=ss.show_avatars, key="avatars_ctl")
         sources = st.toggle("Show sources under answers", value=ss.show_sources, key="sources_ctl")
-        new = dict(theme=theme, font_size=font, compact=compact, show_avatars=avatars, show_sources=sources)
+        new = dict(theme=theme, font_size=font, compact=compact, show_sources=sources)
         if any(ss[k] != v for k, v in new.items()):
             ss.update(new)
             ss.open_settings = True          # reopen after the full rerun that applies the CSS
@@ -114,10 +114,27 @@ def settings_dialog():
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 def sidebar():
     with st.sidebar:
-        st.markdown('<div class="brand"><div class="logo">✦</div>AI Assistant</div>', unsafe_allow_html=True)
-        st.button("New chat", icon=":material/add:", key="new_chat", on_click=hr.new_chat, use_container_width=True)
-        st.text_input("Search chats", key="search", placeholder="Search chats", label_visibility="collapsed")
-        st.markdown('<div class="side-heading">Recent</div>', unsafe_allow_html=True)
+        # Header: app identity + compact search control, similar to ChatGPT.
+        ss.setdefault("show_chat_search", False)
+        brand_col, search_col = st.columns([5, 1], vertical_alignment="center")
+        with brand_col:
+            st.markdown('<div class="brand"><div class="logo">✦</div>AI Assistant</div>',
+                        unsafe_allow_html=True)
+        with search_col:
+            if st.button(":material/search:", key="toggle_chat_search", help="Search chats",
+                         use_container_width=True):
+                ss.show_chat_search = not ss.show_chat_search
+                st.rerun()
+
+        st.button("New chat", icon=":material/edit_square:", key="new_chat",
+                  on_click=hr.new_chat, use_container_width=True)
+        if ss.show_chat_search:
+            st.text_input("Search chats", key="search", placeholder="Search chats",
+                          label_visibility="collapsed")
+        else:
+            # Keep the search value available to the history filter while the field is hidden.
+            ss.setdefault("search", "")
+        st.markdown('<div class="side-heading">Recents</div>', unsafe_allow_html=True)
 
         with st.container(key="history"):
             groups = hr.group_chats(ss.chats, ss.search)
@@ -202,6 +219,8 @@ if not hr.ensure_login():
     st.stop()
 
 hr.finalize_interrupted()
+st.button("", icon=":material/menu:", key="sb_toggle", help="Show / hide sidebar",
+          on_click=hr.toggle_sidebar)
 sidebar()
 
 if ss.pop("open_settings", False):

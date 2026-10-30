@@ -226,6 +226,10 @@ def new_chat() -> None:
     st.session_state.messages = []
     st.session_state.current_chat_id = None
 
+def toggle_sidebar() -> None:
+    ss = st.session_state
+    ss.sidebar_open = not ss.get("sidebar_open", True)
+
 
 def open_chat(chat_id: int) -> None:
     r = api("GET", f"/chat/sessions/{chat_id}/messages")
