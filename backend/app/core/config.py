@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
     LLM_MODEL: str = "gpt-4o-mini"
     LLM_TEMPERATURE: float = 0.2
+    LLM_MAX_TOKENS: int = 2048
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     EMBEDDING_DIM: int = 1536
 
