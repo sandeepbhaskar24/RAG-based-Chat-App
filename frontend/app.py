@@ -1,6 +1,7 @@
 import html
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="AI Assistant", page_icon="✨", layout="wide",
                    initial_sidebar_state="expanded")
@@ -15,7 +16,43 @@ st.markdown(build_css(ss.theme, ss.font_size, ss.compact, ss.get("sidebar_open",
 
 FILE_TYPES = [e.lstrip(".") for e in sorted(hr.ALLOWED_EXTS)]
 LANGUAGES = ["English", "Español", "Français", "Deutsch", "हिन्दी", "日本語"]
+SKELETON = '<div class="skel"></div>' * 5
 
+
+def install_shortcuts():
+    """Ctrl/Cmd+K focuses the sidebar search box."""
+    components.html("""<script>
+const w = window.parent, d = w.document;
+const disableSearchAutofill = () => {
+  const el = d.querySelector('[data-testid="stSidebar"] input[aria-label="Search chats"]');
+  if (el) {
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('autocapitalize', 'none');
+    el.setAttribute('spellcheck', 'false');
+    el.setAttribute('name', 'chat-history-search-no-autofill');
+  }
+};
+disableSearchAutofill();
+if (!w.__ragSearchObserver) {
+  w.__ragSearchObserver = new MutationObserver(disableSearchAutofill);
+  w.__ragSearchObserver.observe(d, {childList: true, subtree: true});
+}
+if (w.__ragKey) d.removeEventListener('keydown', w.__ragKey, true);
+w.__ragKey = (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    const el = d.querySelector('[data-testid="stSidebar"] input[aria-label="Search chats"]');
+    if (el) { e.preventDefault(); el.focus(); el.select(); }
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault();
+    const toggle = d.querySelector('[data-testid="stSidebar"] .st-key-sb_collapse button')
+      || d.querySelector('.st-key-sb_expand button');
+    if (toggle) toggle.click();
+  }
+};
+d.addEventListener('keydown', w.__ragKey, true);
+</script>""", height=0)
 
 
 # ── Login / sign-up ────────────────────────────────────────────────────────────
@@ -51,7 +88,7 @@ def auth_page():
 # ── Dialogs ────────────────────────────────────────────────────────────────────
 @st.dialog("Delete chat?")
 def delete_dialog(chat_id: int):
-    title = next((c["title"] for c in ss.chats if c["id"] == chat_id), "this chat")
+    title = next((c["title"] for c in (ss.chats or []) if c["id"] == chat_id), "this chat")
     st.write(f"“{title}” will be permanently deleted. This can't be undone.")
     c1, c2 = st.columns(2)
     if c1.button("Cancel", use_container_width=True):
@@ -66,8 +103,8 @@ def settings_dialog():
     t_gen, t_acc, t_docs = st.tabs(["General", "Account", "Attached documents"])
 
     with t_gen:
-        theme = st.radio("Theme", ["Light", "Dark", "System"], horizontal=True,
-                         index=["Light", "Dark", "System"].index(ss.theme), key="theme_ctl")
+        theme = st.radio("Theme", ["Dark", "Light", "System"], horizontal=True,
+                         index=["Dark", "Light", "System"].index(ss.theme), key="theme_ctl")
         ss.language = st.selectbox("Language", LANGUAGES, index=LANGUAGES.index(ss.language), key="lang_ctl")
         st.markdown("**Display**")
         font = st.radio("Text size", ["Small", "Default", "Large"], horizontal=True,
@@ -81,9 +118,10 @@ def settings_dialog():
             st.rerun()
 
     with t_acc:
-        st.markdown(f'<div class="profile"><div class="avatar">{html.escape(ss.user["username"][:1].upper())}</div>'
-                    f'<div>{html.escape(ss.user["username"])}</div></div>', unsafe_allow_html=True)
-        st.caption(f"User ID: {ss.user.get('id')}")
+        name = ss.user["username"]
+        st.markdown(f'<div class="profile"><div class="avatar">{html.escape(name[:2].upper())}</div>'
+                    f'<div class="pname"><b>{html.escape(name)}</b><span>User ID {ss.user.get("id")}</span></div></div>',
+                    unsafe_allow_html=True)
         if st.button("Log out", icon=":material/logout:", type="primary"):
             hr.logout()
             st.rerun()
@@ -114,60 +152,56 @@ def settings_dialog():
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 def sidebar():
     with st.sidebar:
-        # Header: app identity + compact search control, similar to ChatGPT.
-        ss.setdefault("show_chat_search", False)
-        brand_col, search_col = st.columns([5, 1], vertical_alignment="center")
-        with brand_col:
-            st.markdown('<div class="brand"><div class="logo">✦</div>AI Assistant</div>',
-                        unsafe_allow_html=True)
-        with search_col:
-            if st.button(":material/search:", key="toggle_chat_search", help="Search chats",
-                         use_container_width=True):
-                ss.show_chat_search = not ss.show_chat_search
-                st.rerun()
+        # One scrollable area contains the header, navigation and chat history.
+        with st.container(key="sidebar_scroll"):
+            with st.container(key="sb_top"):
+                c_brand, c_col = st.columns([5, 1], vertical_alignment="center")
+                c_brand.markdown('<div class="brand"><div class="logo"></div>AI Assistant</div>', unsafe_allow_html=True)
+                c_col.button("", icon=":material/chevron_left:", key="sb_collapse",
+                             help="Collapse sidebar (Ctrl/⌘ + B)", on_click=hr.toggle_sidebar)
+                st.button("New Chat", key="new_chat", on_click=hr.new_chat,
+                          use_container_width=True, help="Start a fresh conversation")
+                with st.container(key="search_wrap"):
+                    st.text_input("Search chats", key="search", placeholder="Search chats…",
+                                  label_visibility="collapsed",
+                                  help="Filter your conversation history (Ctrl/⌘ + K)")
+                st.markdown('<div class="side-heading">Your Chats</div>', unsafe_allow_html=True)
 
-        st.button("New chat", icon=":material/edit_square:", key="new_chat",
-                  on_click=hr.new_chat, use_container_width=True)
-        if ss.show_chat_search:
-            st.text_input("Search chats", key="search", placeholder="Search chats",
-                          label_visibility="collapsed")
-        else:
-            # Keep the search value available to the history filter while the field is hidden.
-            ss.setdefault("search", "")
-        st.markdown('<div class="side-heading">Recents</div>', unsafe_allow_html=True)
-
-        with st.container(key="history"):
-            groups = hr.group_chats(ss.chats, ss.search)
-            if not ss.chats:
-                st.markdown('<div class="empty-state">No conversations yet.<br>Start a new chat!</div>',
-                            unsafe_allow_html=True)
-            elif not groups:
-                st.markdown('<div class="empty-state">No chats match your search.</div>', unsafe_allow_html=True)
-            for label, chats in groups:
-                st.markdown(f'<div class="group-label">{label}</div>', unsafe_allow_html=True)
-                for chat in chats:
-                    cid = chat["id"]
-                    with st.container(key=f"row_{cid}"):
-                        c_t, c_m = st.columns([6, 1], vertical_alignment="center")
-                        c_t.button(chat["title"], key=f"chat_{cid}", use_container_width=True, help=chat["title"],
-                                   type="primary" if cid == ss.current_chat_id else "secondary",
-                                   on_click=hr.open_chat, args=(cid,))
-                        with c_m.popover("⋯"):
-                            rk = f"rn_{cid}"
-                            st.text_input("Rename", value=chat["title"], key=rk, max_chars=120)
-                            st.button("Save", key=f"save_{cid}", icon=":material/edit:",
-                                      on_click=hr.rename_chat, args=(cid, rk), use_container_width=True)
-                            st.button("Delete", key=f"delc_{cid}", icon=":material/delete:", type="primary",
-                                      on_click=hr.ask_delete, args=(cid,), use_container_width=True)
+            with st.container(key="history"):
+                if ss.chats is None:                       # loading state
+                    ph = st.empty()
+                    ph.markdown(SKELETON, unsafe_allow_html=True)
+                    hr.load_chat_history()
+                    ph.empty()
+                groups = hr.group_chats(ss.chats, ss.search)
+                if not ss.chats:
+                    st.markdown('<div class="empty-state">No conversations yet.<br>Start a new chat!</div>',
+                                unsafe_allow_html=True)
+                elif not groups:
+                    st.markdown('<div class="empty-state">No chats match your search.</div>', unsafe_allow_html=True)
+                for label, chats in groups:
+                    st.markdown(f'<div class="group-label">{html.escape(label)}</div>', unsafe_allow_html=True)
+                    for chat in chats:
+                        cid = chat["id"]
+                        active = cid == ss.current_chat_id
+                        with st.container(key=f"row_on_{cid}" if active else f"row_{cid}"):
+                            c_t, c_m = st.columns([6, 1], vertical_alignment="center")
+                            c_t.button(chat["title"], key=f"chat_{cid}", use_container_width=True, help=chat["title"],
+                                       on_click=hr.open_chat, args=(cid,))
+                            with c_m.popover("⋯", help=f"Actions for {chat['title']}"):
+                                rk = f"rn_{cid}"
+                                st.text_input("Rename chat", value=chat["title"], key=rk, max_chars=120, label_visibility="visible")
+                                st.button("Rename", key=f"rename_{cid}", on_click=hr.rename_chat,
+                                          args=(cid, rk), use_container_width=True)
+                                st.button("Delete", key=f"delc_{cid}", on_click=hr.ask_delete,
+                                          args=(cid,), use_container_width=True)
 
         with st.container(key="sb_bottom"):
-            st.divider()
+            st.button("Settings", key="open_settings_btn", on_click=hr.request_settings, use_container_width=True, help="Preferences, account and documents")
             name = ss.user["username"]
-            st.markdown(f'<div class="profile"><div class="avatar">{html.escape(name[:1].upper())}</div>'
-                        f'<div>{html.escape(name)}</div></div>', unsafe_allow_html=True)
-            st.button("Settings", icon=":material/settings:", key="open_settings_btn",
-                      on_click=hr.request_settings, use_container_width=True)
-
+            st.markdown(f'<div class="profile"><div class="avatar">{html.escape(name[:2].upper())}</div>'
+                        f'<div class="pname"><b>{html.escape(name)}</b><span>Signed in</span></div></div>',
+                        unsafe_allow_html=True)
 
 
 # ── Chat area ──────────────────────────────────────────────────────────────────
@@ -186,7 +220,7 @@ def chat_area():
     if regen and ss.messages and ss.messages[-1]["role"] == "assistant":
         ss.messages.pop()
 
-    # ── Welcome screen (no active chat) ──
+    # ── Welcome screen (empty chat) ──
     if not ss.messages:
         welcome = st.empty()
         with welcome.container():
@@ -218,10 +252,13 @@ if not hr.ensure_login():
     auth_page()
     st.stop()
 
+hr.restore_chat_from_url()
 hr.finalize_interrupted()
-st.button("", icon=":material/menu:", key="sb_toggle", help="Show / hide sidebar",
-          on_click=hr.toggle_sidebar)
+install_shortcuts()
 sidebar()
+if not ss.get("sidebar_open", True):
+    st.button("", icon=":material/chevron_right:", key="sb_expand", help="Open sidebar",
+              on_click=hr.toggle_sidebar)
 
 if ss.pop("open_settings", False):
     settings_dialog()

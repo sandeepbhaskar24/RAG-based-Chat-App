@@ -67,20 +67,22 @@ def init_state() -> None:
     ss.user = None
     ss.messages = []            # [{"role","content","sources","attachment"?,"doc_ids"?}]
     ss.current_chat_id = None
-    ss.chats, ss.docs = [], []
+    ss.chats, ss.docs = None, []      # chats=None -> sidebar shows the loading skeleton
     ss.upload_nonce = 0
     ss.server_down = False
     ss.flash = None
+    ss.url_restored = False
+    ss.sidebar_open = True
     # preferences (Settings > General)
-    ss.theme, ss.language = "System", "English"
+    ss.theme, ss.language = "Dark", "English"      # Atom One Dark by default
     ss.font_size, ss.compact = "Default", False
-    ss.show_avatars, ss.show_sources = True, True
+    ss.show_sources = True
     ss.model = MODELS[0]
     # transient UI state
-    ss.inflight = None          # partial answer while streaming (survives Stop)
+    ss.inflight = None
     ss.regen, ss.queued_prompt = False, None
     ss.confirm_delete, ss.open_settings = None, False
-    ss.feedback = {}            # {message_index: "up" | "down"}
+    ss.feedback = {}
     ss.search = ""
 
 
@@ -88,14 +90,15 @@ def _clear_session(message: str | None = None) -> None:
     ss = st.session_state
     ss.token, ss.user = "", None
     ss.messages, ss.current_chat_id = [], None
-    ss.chats, ss.docs = [], []
+    ss.chats, ss.docs = None, []
+    ss.url_restored = False
     ss.flash = message
     _write_token_file("")
 
 
 def logout() -> None:
     _clear_session()
-
+    _sync_url(None)
 
 # ── Response helpers ───────────────────────────────────────────────────────────
 def _normalize(response) -> dict:
@@ -218,13 +221,13 @@ def login(username: str, password: str) -> tuple[bool, str]:
 # ── Chat history (sidebar) ─────────────────────────────────────────────────────
 def load_chat_history() -> None:
     r = api("GET", "/chat/sessions")
-    if r["status_code"] == 200:
-        st.session_state.chats = r.get("data", [])
-
+    ss = st.session_state
+    ss.chats = r.get("data", []) if r["status_code"] == 200 else (ss.chats or [])
 
 def new_chat() -> None:
-    st.session_state.messages = []
-    st.session_state.current_chat_id = None
+    ss = st.session_state
+    ss.messages, ss.current_chat_id, ss.feedback = [], None, {}
+    _sync_url(None)
 
 def toggle_sidebar() -> None:
     ss = st.session_state
@@ -242,6 +245,7 @@ def open_chat(chat_id: int) -> None:
         for m in r.get("data", [])]
     st.session_state.current_chat_id = chat_id
     st.session_state.feedback = {}
+    _sync_url(chat_id)
 
 
 def rename_chat(chat_id: int, input_key: str) -> None:
@@ -263,6 +267,26 @@ def delete_chat(chat_id: int) -> None:
         load_chat_history()
     else:
         st.toast(_error_text(r))
+
+def _sync_url(chat_id) -> None:
+    """Keep ?chat=<id> in the address bar so a browser refresh reopens the same conversation."""
+    if chat_id is None:
+        if "chat" in st.query_params:
+            del st.query_params["chat"]
+    else:
+        st.query_params["chat"] = str(chat_id)
+
+
+def restore_chat_from_url() -> None:
+    ss = st.session_state
+    if ss.get("url_restored"):
+        return
+    ss.url_restored = True
+    cid = st.query_params.get("chat")
+    if cid and str(cid).isdigit() and not ss.messages:
+        open_chat(int(cid))
+        if ss.current_chat_id is None:       # chat no longer exists
+            _sync_url(None)
 
 
 # ── Documents ──────────────────────────────────────────────────────────────────
@@ -409,11 +433,10 @@ def set_feedback(idx: int, value: str) -> None:
 
 def current_chat_title() -> str:
     ss = st.session_state
-    for c in ss.chats:
+    for c in ss.chats or []:
         if c["id"] == ss.current_chat_id:
             return c["title"]
     return "New chat"
-
 
 def transcript_md() -> str:
     out = [f"# {current_chat_title()}\n"]
@@ -436,8 +459,15 @@ def _local_dt(s: str) -> datetime:
 def group_chats(chats: list, query: str = "") -> list[tuple[str, list]]:
     q, today = query.strip().lower(), datetime.now().astimezone().date()
     buckets = {"Today": [], "Yesterday": [], "Previous 7 Days": [], "Previous 30 Days": [], "Older": []}
-    for c in chats:
-        if q and q not in c["title"].lower():
+    # Sort newest-first before bucketing so each date section is predictable.
+    ordered = sorted(
+        chats or [],
+        key=lambda c: _local_dt(c.get("updated_at", "")).timestamp(),
+        reverse=True,
+    )
+    for c in ordered:
+        title = str(c.get("title") or "New chat")
+        if q and q not in title.lower():
             continue
         d = (today - _local_dt(c.get("updated_at", "")).date()).days
         key = ("Today" if d <= 0 else "Yesterday" if d == 1 else "Previous 7 Days" if d <= 7
@@ -470,6 +500,7 @@ def _stream_tokens(payload: dict, ctx: dict, status_ph):
         for event, data in iter_sse(r.iter_lines(chunk_size=1)):
             if event == "session":
                 ss.current_chat_id = data["session_id"]
+                _sync_url(data["session_id"])
             elif event == "status":
                 if not got_token:
                     status_ph.markdown(_thinking(data.get("text", "")), unsafe_allow_html=True)
@@ -576,8 +607,8 @@ def _copy_button(text: str) -> None:
     components.html(f"""
 <style>html,body{{margin:0;background:transparent}}
 button{{width:32px;height:32px;border:0;border-radius:8px;background:transparent;cursor:pointer;
-color:#8e8e8e;display:flex;align-items:center;justify-content:center;font-size:14px}}
-button:hover{{background:rgba(128,128,128,.2)}}</style>
+color:#c8cdd5;display:flex;align-items:center;justify-content:center;font-size:14px}}
+button:hover{{background:#3a404a;color:#ffffff}}</style>
 <button id="b" title="Copy" aria-label="Copy">{_COPY_ICON}</button>
 <script>
 const t={payload}, b=document.getElementById('b'), icon=b.innerHTML;
@@ -590,24 +621,22 @@ b.onclick=async()=>{{
 
 
 def _action_bar(m: dict, idx: int) -> None:
-    ss = st.session_state
-    fb = ss.feedback.get(idx)
-    is_last = idx == len(ss.messages) - 1
+    """Render only the useful message actions: copy and regenerate."""
+    is_last = idx == len(st.session_state.messages) - 1
     with st.container(key=f"actions_{idx}"):
-        c = st.columns(5, gap="small")
+        c = st.columns(2, gap="small")
         with c[0]:
             _copy_button(m["content"])
-        c[1].button("", icon=":material/refresh:", key=f"regen_{idx}", help="Regenerate",
-                    on_click=request_regenerate, disabled=not is_last)
-        c[2].button("", icon=":material/thumb_up:", key=f"up_{idx}", help="Good response",
-                    type="primary" if fb == "up" else "secondary", on_click=set_feedback, args=(idx, "up"))
-        c[3].button("", icon=":material/thumb_down:", key=f"down_{idx}", help="Bad response",
-                    type="primary" if fb == "down" else "secondary", on_click=set_feedback, args=(idx, "down"))
-        with c[4].popover("", icon=":material/ios_share:", help="Share"):
-            st.caption("Export this conversation")
-            st.download_button("Download as Markdown", transcript_md(), file_name="chat.md",
-                               mime="text/markdown", key=f"dl_{idx}", icon=":material/download:",
-                               use_container_width=True)
+        # Regeneration is meaningful only for the latest assistant response:
+        # request_regenerate() replays the most recent user turn.
+        if is_last:
+            c[1].button(
+                "",
+                icon=":material/refresh:",
+                key=f"regen_{idx}",
+                help="Regenerate response",
+                on_click=request_regenerate,
+            )
 
 
 def render_message(m: dict, idx: int) -> None:
