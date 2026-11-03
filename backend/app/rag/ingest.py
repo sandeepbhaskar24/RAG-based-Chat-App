@@ -38,10 +38,11 @@ def ingest_file(path: str | Path, *, doc_id: int, user_id: int, filename: str, d
         raise ValueError("Document produced no text chunks.")
 
     # 1. Content-based IDs; identical chunks inside this file collapse to one point
-    by_id = {}
-    for c in chunks:
+    by_id, order = {}, {}
+    for idx, c in enumerate(chunks):
         pid = point_id(user_id, c.metadata.get("page"), c.page_content)
         by_id.setdefault(pid, c)
+        order.setdefault(pid, idx)
     all_ids = list(by_id)
 
     # 2. Claim these points in MySQL BEFORE touching Qdrant, so a failure can be cleaned up
@@ -64,7 +65,8 @@ def ingest_file(path: str | Path, *, doc_id: int, user_id: int, filename: str, d
         to_add = []
         for pid in missing:
             c = by_id[pid]
-            c.metadata = {"user_id": user_id, "doc_ids": [doc_id], "page": c.metadata.get("page")}
+            c.metadata = {"user_id": user_id, "doc_ids": [doc_id],
+                          "page": c.metadata.get("page"), "chunk_index": order[pid]}
             to_add.append(c)
         store.add_documents(to_add, ids=missing)
 
