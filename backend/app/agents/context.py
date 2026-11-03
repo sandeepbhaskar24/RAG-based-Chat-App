@@ -21,9 +21,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RequestContext:
     user_id: int
-    doc_ids: list[int] | None                 # set when the user attached a document
+    doc_ids: list[int] | None
     budget: LLMBudget = field(default_factory=LLMBudget)
     retriever: HybridRetriever = field(init=False)
+    t0: float = field(default_factory=time.perf_counter)                      # NEW
+    timings: list[tuple[str, float, float]] = field(default_factory=list)     # NEW (name, start_ms, ms)
 
     def __post_init__(self):
         self.retriever = HybridRetriever(self.user_id, self.doc_ids)
@@ -35,7 +37,22 @@ class RequestContext:
         try:
             yield
         finally:
-            logger.info("stage [%s] %.0f ms", name, (time.perf_counter() - start) * 1000)
+            end = time.perf_counter()
+            self.timings.append((name, (start - self.t0) * 1000, (end - start) * 1000))
+            logger.info("stage [%s] %.0f ms", name, (end - start) * 1000)
+
+    def log_summary(self) -> None:                                            # NEW
+        total = (time.perf_counter() - self.t0) * 1000
+        lines = ["", " +-- REQUEST TIMELINE ─────────────────────────────────────"]
+        for name, at, ms in self.timings:
+            lines.append(f"│ {name:<18} start +{at:7.0f} ms   took {ms:7.0f} ms")
+        lines.append(" |-- LLM CALLS ────────────────────────────────────────────")
+        for c in self.budget.calls:
+            ttft = f"{c['ttft_ms']:.0f} ms" if c["ttft_ms"] is not None else "-"
+            lines.append(f"│ {c['label']:<18} total {c['total_ms']:7.0f} ms   first token {ttft}")
+        lines.append(f" +-- agent graph total: {total:.0f} ms "
+                     f"({self.budget.used}/{self.budget.limit} LLM calls)")
+        logger.info("\n".join(lines))
 
 
 def get_ctx(config: RunnableConfig) -> RequestContext:
