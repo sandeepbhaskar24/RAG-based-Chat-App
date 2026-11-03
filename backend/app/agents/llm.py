@@ -48,6 +48,7 @@ class LLMBudget:
     limit: int = field(default_factory=lambda: settings.MAX_LLM_CALLS)
     used: int = 0
     labels: list[str] = field(default_factory=list)
+    calls: list[dict] = field(default_factory=list)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @property
@@ -55,10 +56,6 @@ class LLMBudget:
         return self.limit - self.used
 
     def can_spend(self, keep: int = 1) -> bool:
-        """True if we can make one more call and still have `keep` calls left.
-
-        Optional steps use keep=1 so the final answer call is always reserved.
-        """
         return self.remaining > keep
 
     def spend(self, label: str) -> None:
@@ -67,6 +64,10 @@ class LLMBudget:
                 raise BudgetExceeded(f"LLM call budget ({self.limit}) exhausted before '{label}'")
             self.used += 1
             self.labels.append(label)
+
+    def record(self, label: str, total_ms: float, ttft_ms: float | None = None) -> None:
+        with self._lock:
+            self.calls.append({"label": label, "total_ms": total_ms, "ttft_ms": ttft_ms})
 
 
 def message_text(msg) -> str:
@@ -130,8 +131,9 @@ def call_structured(budget: LLMBudget, label: str, schema: type[BaseModel], mess
             raise StructuredOutputError(f"Model returned no valid {schema.__name__} for '{label}'")
         return result
     finally:
-        logger.info("LLM call %d/%d [%s] %.0f ms", budget.used, budget.limit, label,
-                    (time.perf_counter() - start) * 1000)
+        ms = (time.perf_counter() - start) * 1000
+        budget.record(label, ms)
+        logger.info("LLM call %d/%d [%s] %.0f ms", budget.used, budget.limit, label, ms)
 
 
 def stream_answer(budget: LLMBudget, label: str, messages: list,
@@ -139,11 +141,16 @@ def stream_answer(budget: LLMBudget, label: str, messages: list,
     """One streaming call; yields text pieces."""
     budget.spend(label)
     start = time.perf_counter()
+    first: float | None = None
     try:
         for chunk in get_llm(temperature).stream(messages):
             text = message_text(chunk)
             if text:
+                if first is None:
+                    first = (time.perf_counter() - start) * 1000   # time to first token
                 yield text
     finally:
-        logger.info("LLM call %d/%d [%s] %.0f ms", budget.used, budget.limit, label,
-                    (time.perf_counter() - start) * 1000)
+        total = (time.perf_counter() - start) * 1000
+        budget.record(label, total, first)
+        logger.info("LLM call %d/%d [%s] total %.0f ms, first token %s", budget.used, budget.limit,
+                    label, total, f"{first:.0f} ms" if first is not None else "n/a")
