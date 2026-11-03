@@ -33,7 +33,7 @@ def run_agents(question: str, history: list[BaseMessage], user_id: int,
             yield payload
         else:
             final_state = payload
-
+    ctx.log_summary()
     route = final_state.get("route", "DIRECT")
     logger.info("request done route=%s llm_calls=%d/%d (%s) total=%.0f ms", route,
                 ctx.budget.used, ctx.budget.limit, ",".join(ctx.budget.labels),
