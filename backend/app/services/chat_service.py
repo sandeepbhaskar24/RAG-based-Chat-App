@@ -9,6 +9,7 @@ SSE events emitted by stream_chat():
   error    {"detail": str}               (instead of sources/done if something fails)
 """
 import json
+import time
 import logging
 from collections.abc import Iterator
 
@@ -64,14 +65,19 @@ def _has_ready_documents(user_id: int) -> bool:
         return any(d.status == "ready" for d in crud.list_documents(db, user_id))
 
 
-def stream_chat(user_id: int, session_id: int, title: str, message: str,
-                doc_ids: list[int] | None, history: list[BaseMessage]) -> Iterator[str]:
+def stream_chat(user_id, session_id, title, message, doc_ids, history, t_received=None):
+    t_received = t_received or time.perf_counter()
+    logger.info("prepare_chat (validate + DB + history) %.0f ms",
+                (time.perf_counter() - t_received) * 1000)
     yield sse("session", {"session_id": session_id, "title": title})
     try:
-        parts: list[str] = []
-        sources: list[dict] = []
+        parts, sources, first_token_logged = [], [], False
         for ev in run_agents(message, history, user_id, doc_ids, _has_ready_documents(user_id)):
             if ev["type"] == "token":
+                if not first_token_logged:
+                    first_token_logged = True
+                    logger.info("TIME TO FIRST TOKEN (from request received): %.0f ms",
+                                (time.perf_counter() - t_received) * 1000)
                 parts.append(ev["text"])
                 yield sse("token", {"text": ev["text"]})
             elif ev["type"] == "status":
@@ -85,10 +91,15 @@ def stream_chat(user_id: int, session_id: int, title: str, message: str,
             yield sse("token", {"text": answer})
 
         # Own DB session: the request-scoped one may already be closed while streaming.
+        t_save = time.perf_counter()
         with SessionLocal() as db:
             saved = crud.add_message(db, session_id, "assistant", answer, sources)
+        logger.info("save assistant message %.0f ms", (time.perf_counter() - t_save) * 1000)
+        logger.info("TOTAL (request received -> final response): %.0f ms",
+                    (time.perf_counter() - t_received) * 1000)
         yield sse("sources", {"sources": sources})
         yield sse("done", {"message_id": saved.id})
+
     except Exception:
         logger.exception("Chat generation failed (session %s)", session_id)
         yield sse("error", {"detail": "Failed to generate a response. Please try again."})
