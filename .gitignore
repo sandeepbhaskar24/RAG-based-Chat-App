@@ -1,10 +1,10 @@
 **/__pycache__/*
 backend/storage/uploads/*
 backend/testing.py
+backend/test_llm.py
 .venv/*
 *.db
 .env
 .vscode/*
-frontend/auth_token.x
+frontend/dialog/auth_token.x
 frontend_/
-backend/test_llm.py
