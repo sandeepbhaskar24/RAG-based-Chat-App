@@ -1,50 +1,75 @@
-"""Wires the three agents into one LangGraph.
+"""Wires the three agents into ONE LangGraph.
 
-START -> router --direct---> direct_answer -> END
-                 --retrieve-> kb_agent <-> kb_tools / kb_nudge -> kb_answer -> END
-                 --weather--> weather_agent <-> weather_tools -> END
+START -> router --DIRECT---> direct_answer -> END
+                --CLARIFY--> clarify -> END
+                --WEATHER--> weather_extract -> weather_fetch -> weather_answer -> END
+                --OVERVIEW-> summarize -> END
+                --RAG------> rewrite -> search -> assess -> generate -> verify -> END
+                                          ^          |
+                                          +-- retry <+  (at most once)
+                                                     +--> no_answer -> END
 
-One flat graph (not nested subgraphs) so token streaming works with a simple node filter.
+One flat graph (not nested subgraphs) keeps the flow easy to read in one place.
+Nodes push live events (status / token) with emit(); runner.py turns them into the SSE stream.
 """
 from functools import lru_cache
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
 
-from app.agents.kb_agent import (KB_TOOLS, kb_agent_node, kb_answer_node, kb_nudge_node,
-                                 route_after_kb_agent)
-from app.agents.router import direct_answer_node, route_from_router, router_node
+from app.agents.rag_agent import (assess_node, generate_node, no_answer_node, retry_node,
+                                  rewrite_node, route_after_assess, route_after_retry,
+                                  search_node, summarize_node, verify_node)
+from app.agents.router import clarify_node, direct_answer_node, route_from_router, router_node
 from app.agents.state import AgentState
-from app.agents.weather_agent import (route_after_weather_agent, weather_agent_node,
-                                      weather_tool_node)
+from app.agents.weather_agent import (route_after_extract, route_after_fetch, weather_answer_node,
+                                      weather_extract_node, weather_fetch_node)
 
 
 @lru_cache
 def get_graph():
     g = StateGraph(AgentState)
 
+    # Agent 1: router (+ the two routes that need no retrieval)
     g.add_node("router", router_node)
     g.add_node("direct_answer", direct_answer_node)
+    g.add_node("clarify", clarify_node)
 
-    g.add_node("kb_agent", kb_agent_node)
-    g.add_node("kb_tools", ToolNode(KB_TOOLS))
-    g.add_node("kb_nudge", kb_nudge_node)
-    g.add_node("kb_answer", kb_answer_node)
+    # Agent 2: RAG
+    g.add_node("rewrite", rewrite_node)
+    g.add_node("search", search_node)
+    g.add_node("assess", assess_node)
+    g.add_node("retry", retry_node)
+    g.add_node("generate", generate_node)
+    g.add_node("verify", verify_node)
+    g.add_node("no_answer", no_answer_node)
+    g.add_node("summarize", summarize_node)
 
-    g.add_node("weather_agent", weather_agent_node)
-    g.add_node("weather_tools", weather_tool_node)
+    # Agent 3: weather
+    g.add_node("weather_extract", weather_extract_node)
+    g.add_node("weather_fetch", weather_fetch_node)
+    g.add_node("weather_answer", weather_answer_node)
 
+    # Routing
     g.add_edge(START, "router")
-    g.add_conditional_edges("router", route_from_router,
-                            {"direct": "direct_answer", "retrieve": "kb_agent", "weather": "weather_agent"})
+    g.add_conditional_edges("router", route_from_router, {
+        "direct": "direct_answer", "clarify": "clarify", "rag": "rewrite",
+        "weather": "weather_extract", "no_answer": "no_answer",
+        "summarize": "summarize"})
 
-    g.add_conditional_edges("kb_agent", route_after_kb_agent, ["kb_tools", "kb_nudge", "kb_answer"])
-    g.add_edge("kb_tools", "kb_agent")          # retrieval loop
-    g.add_edge("kb_nudge", "kb_agent")
-    g.add_edge("kb_answer", END)
+    # RAG flow
+    g.add_edge("rewrite", "search")
+    g.add_edge("search", "assess")
+    g.add_conditional_edges("assess", route_after_assess,
+                            {"generate": "generate", "retry": "retry", "no_answer": "no_answer"})
+    g.add_conditional_edges("retry", route_after_retry, {"search": "search", "no_answer": "no_answer"})
+    g.add_edge("generate", "verify")
 
-    g.add_conditional_edges("weather_agent", route_after_weather_agent, ["weather_tools", END])
-    g.add_edge("weather_tools", "weather_agent")
+    # Weather flow
+    g.add_conditional_edges("weather_extract", route_after_extract, {"fetch": "weather_fetch", END: END})
+    g.add_conditional_edges("weather_fetch", route_after_fetch, {"answer": "weather_answer", END: END})
 
-    g.add_edge("direct_answer", END)
+    # Everything ends here
+    for node in ("direct_answer", "clarify", "verify", "no_answer", "weather_answer", "summarize"):
+        g.add_edge(node, END)
+
     return g.compile()
