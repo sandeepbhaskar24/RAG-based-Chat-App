@@ -196,6 +196,7 @@ def search_node(state: AgentState, config: RunnableConfig):
     candidates = merge_unique(state.get("candidates", []), fresh)[: settings.MAX_CANDIDATES]
     with ctx.stage("rerank"):
         docs = rerank(state["question"], candidates, settings.FINAL_TOP_K)   # scored vs ORIGINAL question
+    log_top_chunks(docs)                      # NEW
     return {"candidates": candidates, "docs": docs}
 
 
@@ -321,3 +322,15 @@ def no_answer_node(state: AgentState):
                 + " Try rephrasing, or tell me which document to look in.")
     emit("token", text)
     return {"answer": text}
+
+def log_top_chunks(docs: list[Document]) -> None:
+    def f(x):
+        return f"{x:.4f}" if isinstance(x, (int, float)) else "n/a"
+    lines = [f"Top {len(docs)} chunks after rerank:"]
+    for i, d in enumerate(docs, 1):
+        m = d.metadata
+        lines.append(
+            f"  #{i} rerank_prob={f(m.get('rerank_score'))}  cosine={f(m.get('score'))}  "
+            f"page={m.get('page')}  doc_ids={m.get('doc_ids')}  | "
+            f"{' '.join(d.page_content.split())[:70]}…")
+    logger.info("\n".join(lines))
