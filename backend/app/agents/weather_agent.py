@@ -1,20 +1,24 @@
 """Agent 3 - live weather via Open-Meteo (free, no API key).
 
-weather_agent --tool call--> weather_tools --> weather_agent (writes the streamed reply)
+Graph:  weather_extract -> weather_fetch -> weather_answer
+        (each step can end early: no location -> ask for a city; service down -> say so)
 """
+import logging
 from typing import Literal
 
 import httpx
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import tool
 from langgraph.graph import END
-from langgraph.prebuilt import ToolNode
+from pydantic import BaseModel, Field
 
-from app.agents.llm import get_llm
-from app.agents.prompts import WEATHER_PROMPT
+from app.agents.context import emit, get_ctx
+from app.agents.llm import call_structured, stream_answer
+from app.agents.prompts import WEATHER_ANSWER_PROMPT, WEATHER_EXTRACT_PROMPT
 from app.agents.state import AgentState
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 GEO_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
@@ -30,6 +34,16 @@ WMO = {
 }
 
 
+class WeatherRequest(BaseModel):
+    location: str | None = Field(default=None, description="City/place, or null if unknown")
+    units: Literal["metric", "imperial"] = "metric"
+    forecast_days: int = 3
+
+
+class WeatherError(Exception):
+    """Raised with a user-friendly message."""
+
+
 def _geocode(location: str) -> dict | None:
     """'Springfield, Illinois' -> search 'Springfield', prefer the result matching 'Illinois'."""
     name, _, hint = (p.strip() for p in location.partition(","))
@@ -38,24 +52,19 @@ def _geocode(location: str) -> dict | None:
     r.raise_for_status()
     results = r.json().get("results") or []
     if hint:
-        h = hint.lower()
         for res in results:
             hay = " ".join(str(res.get(k, "")) for k in ("admin1", "admin2", "country", "country_code")).lower()
-            if h in hay:
+            if hint.lower() in hay:
                 return res
     return results[0] if results else None
 
 
-@tool
-def get_weather(location: str, units: Literal["metric", "imperial"] = "metric",
-                forecast_days: int = 3) -> str:
-    """Get LIVE weather for a city or place: current conditions plus a short daily forecast.
-    `location` can be 'Indore' or 'Springfield, Illinois' (add region/country to disambiguate).
-    Use units='imperial' only if the user wants Fahrenheit/mph."""
+def fetch_weather(location: str, units: str = "metric", forecast_days: int = 3) -> str:
+    """Return a plain-text weather report, or raise WeatherError."""
     try:
         place = _geocode(location)
         if place is None:
-            return f"Could not find a place called '{location}'. Ask the user for a more specific location."
+            raise WeatherError(f"I couldn't find a place called '{location}'. Could you be more specific?")
         params = {
             "latitude": place["latitude"], "longitude": place["longitude"], "timezone": "auto",
             "forecast_days": max(1, min(forecast_days, 7)),
@@ -69,18 +78,19 @@ def get_weather(location: str, units: Literal["metric", "imperial"] = "metric",
         r.raise_for_status()
         data = r.json()
     except httpx.HTTPError as exc:
-        return f"Weather service error: {exc}. Tell the user live weather is unavailable right now."
+        logger.warning("Weather service error: %s", exc)
+        raise WeatherError("Live weather is unavailable right now. Please try again in a moment.") from exc
 
     cur, u, daily = data["current"], data["current_units"], data["daily"]
     region = ", ".join(str(p) for p in (place.get("name"), place.get("admin1"), place.get("country")) if p)
     lines = [
-        f"Location: {region} ({place['latitude']:.2f}, {place['longitude']:.2f})",
+        f"Location: {region}",
         f"Observed: {cur['time']} local time ({data.get('timezone', '')})",
         f"Conditions: {WMO.get(cur['weather_code'], 'Unknown')}",
         f"Temperature: {cur['temperature_2m']}{u['temperature_2m']} "
         f"(feels like {cur['apparent_temperature']}{u['apparent_temperature']})",
         f"Humidity: {cur['relative_humidity_2m']}% | Cloud cover: {cur['cloud_cover']}%",
-        f"Wind: {cur['wind_speed_10m']} {u['wind_speed_10m']} from {cur['wind_direction_10m']}°",
+        f"Wind: {cur['wind_speed_10m']} {u['wind_speed_10m']} from {cur['wind_direction_10m']} degrees",
         f"Precipitation (last hour): {cur['precipitation']} {u['precipitation']}",
         "Forecast:",
     ]
@@ -92,18 +102,53 @@ def get_weather(location: str, units: Literal["metric", "imperial"] = "metric",
     return "\n".join(lines)
 
 
-WEATHER_TOOLS = [get_weather]
-weather_tool_node = ToolNode(WEATHER_TOOLS)
+# ── Graph nodes ─────────────────────────────────────────────────────────────────
+
+def weather_extract_node(state: AgentState, config: RunnableConfig):
+    """LLM call 1: pull the location/units out of the question (and chat history)."""
+    ctx = get_ctx(config)
+    try:
+        req = call_structured(
+            ctx.budget, "weather_extract", WeatherRequest,
+            [SystemMessage(WEATHER_EXTRACT_PROMPT), *state["history"][-6:], HumanMessage(state["question"])])
+    except Exception:
+        logger.exception("Weather request extraction failed")
+        req = WeatherRequest()
+
+    if not req.location:
+        text = "Which city would you like the weather for?"
+        emit("token", text)
+        return {"weather": None, "answer": text}
+    return {"weather": req}
 
 
-def weather_agent_node(state: AgentState, config: RunnableConfig):
-    llm = get_llm(0.3).bind_tools(WEATHER_TOOLS)
-    reply = llm.invoke(
-        [SystemMessage(WEATHER_PROMPT), *state["history"][-6:], *state["messages"]], config)
-    return {"messages": [reply], "steps": state.get("steps", 0) + 1}
+def route_after_extract(state: AgentState) -> str:
+    return "fetch" if state.get("weather") else END
 
 
-def route_after_weather_agent(state: AgentState) -> str:
-    if getattr(state["messages"][-1], "tool_calls", None) and state.get("steps", 0) < 4:
-        return "weather_tools"
-    return END
+def weather_fetch_node(state: AgentState, config: RunnableConfig):
+    """Plain HTTP call, no LLM."""
+    ctx, req = get_ctx(config), state["weather"]
+    emit("status", f"Fetching live weather for {req.location}\u2026")
+    try:
+        with ctx.stage("weather_fetch"):
+            return {"report": fetch_weather(req.location, req.units, req.forecast_days)}
+    except WeatherError as exc:
+        emit("token", str(exc))
+        return {"report": "", "answer": str(exc)}
+
+
+def route_after_fetch(state: AgentState) -> str:
+    return "answer" if state.get("report") else END
+
+
+def weather_answer_node(state: AgentState, config: RunnableConfig):
+    """LLM call 2: turn the raw report into a friendly streamed summary."""
+    ctx = get_ctx(config)
+    messages = [SystemMessage(WEATHER_ANSWER_PROMPT.format(report=state["report"])),
+                HumanMessage(state["question"])]
+    parts = []
+    for text in stream_answer(ctx.budget, "weather_answer", messages, temperature=0.3):
+        parts.append(text)
+        emit("token", text)
+    return {"answer": "".join(parts)}
