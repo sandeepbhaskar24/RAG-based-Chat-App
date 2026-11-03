@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+import time
+
 from app.api.deps import get_current_user
 from app.db import crud
 from app.db.models import User
@@ -14,9 +16,10 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("")
 def chat(req: ChatRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    """Ask a question; the answer streams back as Server-Sent Events (see chat_service)."""
+    t_received = time.perf_counter()
     session, history = chat_service.prepare_chat(db, user, req.message, req.session_id, req.doc_ids)
-    stream = chat_service.stream_chat(user.id, session.id, session.title, req.message, req.doc_ids, history)
+    stream = chat_service.stream_chat(user.id, session.id, session.title, req.message,
+                                      req.doc_ids, history, t_received=t_received)
     return StreamingResponse(
         stream,
         media_type="text/event-stream",
